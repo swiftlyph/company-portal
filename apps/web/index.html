@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/png" href="/gasa-icon.png" />
+    <title>GASA Company Portal</title>
+    <script>
+      // Applied before first paint so an authed dark-mode user never sees a
+      // light flash. Mirrors ThemeProvider's storage key and values exactly
+      // ("theme": "dark" | "light" | "system"); the provider takes over on
+      // mount and keeps the class in sync from then on.
+      (function () {
+        try {
+          var stored = localStorage.getItem("theme");
+          var dark =
+            stored === "dark" ||
+            ((stored === null || stored === "system") &&
+              window.matchMedia("(prefers-color-scheme: dark)").matches);
+          document.documentElement.classList.toggle("dark", dark);
+        } catch (e) {
+          // Leave the light default in place.
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
