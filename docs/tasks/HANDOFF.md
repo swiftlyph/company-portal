@@ -10,11 +10,11 @@
 
 | Item | State | Pending |
 |---|---|---|
-| Last sync (`ai-core/08` SYNC RULE) | 2026-09-16 00:54 +08:00. gasa-api `main` @ `69be9c4` (P10, section 4.2); `dev-dean` = `main`. company-portal remote still empty | Sync again at the next session start, or by 2026-09-16 08:54 in this session |
-| Working branch (`ai-core/08` BRANCH RULE) | `dev-dean` checked out in company-portal and gasa-api, local only. merchant-portal untouched, on `main` | Push `dev-dean` when the user says so. Q10: was merchant-portal meant too? |
-| gasa-api: Company domain + employee roster | **Built 2026-09-16 on `dev-dean`, uncommitted** (section 4.3). Pint, Larastan and the Pest suite pass locally (490 passed on the rerun; the only failure is the Redis-only health check, see 4.3) | Q12: commit plan, then PR `dev-dean` -> `main` |
+| Last sync (`ai-core/08` SYNC RULE) | 2026-09-16 02:17 +08:00, right before the commits below. gasa-api `main` @ `69be9c4` (P10, section 4.2), unchanged since 00:54 | Sync again at the next session start |
+| Working branch (`ai-core/08` BRANCH RULE) | `dev-dean` in both repos. company-portal: `main` and `dev-dean` both pushed. gasa-api: `dev-dean` has 2 local commits, push denied (Q14). merchant-portal untouched, on `main` | Q10: was merchant-portal meant too? |
+| gasa-api: Company domain + employee roster | **Committed on `dev-dean` 2026-09-16: `966e1ac` (domain) + `7ffbe60` (seeders). NOT pushed: GitHub returned 403 for `dinmaku` on `swiftlyph/gasa-api`** (section 4.3). Pint, Larastan and Pest pass locally (490 passed on the rerun; the only failure is the Redis-only health check) | Q14: write access, then `git push -u origin dev-dean` and open the PR `dev-dean` -> `main` |
 | Local environment | gasa-api `.env` (git-ignored) has the local Postgres credentials and file/sync drivers (no Redis on this machine); databases `gasa` (migrated + seeded) and `gasa_api_test` exist. Both apps ran and were smoke-tested end to end on 2026-09-16 (section 11) | None |
-| company-portal: login, shell, dashboard, Employees | **Built 2026-09-16 on `dev-dean`, uncommitted** (section 7). `build`, `lint`, `test` (26), `typecheck` pass | First commit + push (Q9), then a `CLAUDE.md` decision |
+| company-portal: login, shell, dashboard, Employees | **Pushed 2026-09-16: `main` @ `34a7303` (3 commits: scaffold, feature, docs), GitHub's default branch; `dev-dean` pushed from the same commit** (section 7). `build`, `lint`, `test` (26), `typecheck` pass. `CLAUDE.md` added (no AI attribution, like the other repos) | New commits go on `dev-dean` and reach `main` by PR |
 | Staging evidence account | `StagingCompanySeeder` (section 4.3), manual, not yet run anywhere | Run on staging after the gasa-api PR merges |
 | Workspace `E:\Desktop\gasa` | Set up. We only work in company-portal and gasa-api (`ai-core/08`) | None |
 | Old `E:\Desktop\company-portal` | Duplicate of `gasa/company-portal` (verified identical on 2026-09-11) | User deletes it after reopening VS Code at `E:\Desktop\gasa` |
@@ -72,9 +72,9 @@ Rules (full text in `company-portal/ai-core/08-workspace-rules.md`):
 
 | Repo | Stack | Branch @ HEAD | Repo rules |
 |---|---|---|---|
-| gasa-api | Laravel 12, PHP ^8.2 (8.5 locally), Vite 7, Tailwind 4, PHPStan, Pest | `dev-dean` @ `69be9c4` + uncommitted Company domain (section 4.3) | `CLAUDE.md`: no Co-Authored-By or AI attribution in commits; one commit per logical feature |
+| gasa-api | Laravel 12, PHP ^8.2 (8.5 locally), Vite 7, Tailwind 4, PHPStan, Pest | `dev-dean` @ `7ffbe60`, two local commits ahead of `main` @ `69be9c4`, not pushed (Q14) | `CLAUDE.md`: no Co-Authored-By or AI attribution in commits; one commit per logical feature |
 | merchant-portal | React 18, TypeScript 5.6, Vite 5, Tailwind 4, shadcn (`components.json`), Vitest | `main` @ `252770c` (PR #10: F11 receipt + shift report printing), checked 2026-09-11 | `CLAUDE.md`: no Co-Authored-By or AI attribution in commits; has `.claude/commands/` |
-| company-portal | React 19, TypeScript ~6, Vite 8, Tailwind 4, shadcn 4 (Base UI), Turborepo 2 + npm workspaces, Vitest 4 | `dev-dean`, no commits (`main` also unborn); GitHub repo exists but is empty | No `CLAUDE.md`. First commit + push: see Q9 |
+| company-portal | React 19, TypeScript ~6, Vite 8, Tailwind 4, shadcn 4 (Base UI), Turborepo 2 + npm workspaces, Vitest 4 | `main` @ `34a7303` pushed (GitHub default); `dev-dean` pushed, ahead of `main` by the handoff commits | `CLAUDE.md`: no Co-Authored-By or AI attribution in commits |
 
 gasa-api remote branches: `main`, `staging` (same commit as `main`), `feat/orders-domain`, `feat/p5-admin-provisioning`, `feat/p6`, `feat/p8-permissions`, `feat/p9-shift-report-receipt`.
 
@@ -342,6 +342,7 @@ Not done: employee detail page, CSV import, sorting controls, the three placehol
 | 2026-09-16 | User asked for a `dev-dean` branch on all repos as our workspace. Synced, then created and checked out local `dev-dean` in company-portal and gasa-api (not pushed). Skipped merchant-portal under the SCOPE RULE (Q10). Added the BRANCH RULE to `ai-core/08` and reworked its sync script for a workspace branch. |
 | 2026-09-16 | User shared the task board and asked for the project state, at least dead links for dashboard/login/features, and to start Employee Management, following gasa-api's own patterns. Found `app/Domains/Company` empty. Read the Merchant domain end to end (tenancy, provisioning, team, tests, seeders), installed gasa-api's Composer deps, built the Company domain + employee roster (section 4.3) with Pest tests, Pint and Larastan clean. Pest not run: Postgres credentials needed (Q11). |
 | 2026-09-16 | Built the company-portal app (section 7): API client, auth, shell, login, inactive screen, dashboard, Employees CRUD, placeholders, 26 Vitest tests. Hit an npm 10.9 arborist crash on install; `npx -y npm@11 install` works (section 2.1). `build`, `lint`, `typecheck`, `test` all pass. Replaced the scaffold README. |
+| 2026-09-16 | Added the GASA icon (favicon, sidebar brand tile, login card). End of day: synced, committed company-portal on `main` (3 commits) and pushed `main` + `dev-dean`; added `CLAUDE.md` and `.gitattributes`. Committed gasa-api on `dev-dean` (2 commits); push denied with 403 for `dinmaku` (Q14). |
 | 2026-09-16 | User supplied the local Postgres password. Set it in gasa-api `.env`, switched cache/session/queue to file/sync (no Redis), created `gasa` + `gasa_api_test`, ran `migrate --seed`, started both servers (API :8001, portal :5174) and smoke-tested login, profile, employee search, wrong-portal login and CORS. Ran the Pest suite: 489 passed, 2 failed (Redis-only health check; flaky Z-report count case, verified not ours by stashing). |
 
 ---
@@ -358,11 +359,12 @@ Not done: employee detail page, CSV import, sorting controls, the three placehol
 | 6 | Fix the truncated `ai-core/06-document-analysis.md` | User | Optional |
 | 7 | Confirm the API client approach (no axios, section 6) | User | Implemented 2026-09-16 following merchant-portal; say so if axios is still wanted |
 | 8 | Pin the company-portal dev port and add it to gasa-api `FRONTEND_ORIGINS` | Claude | Done 2026-09-16: 5174 strictPort; `.env` and `.env.example` updated in gasa-api |
-| 9 | First commit + push of company-portal. `main` and `dev-dean` are both unborn. Recommendation: put the first commit on `main` and push it so GitHub's default branch is `main`, then continue on `dev-dean`. Also decide on a `CLAUDE.md` with the same no-AI-attribution rule as the other two repos | User | Ready, waiting for go-ahead |
+| 9 | First commit + push of company-portal | User | Done 2026-09-16: three commits on `main`, pushed first so it is GitHub's default; `dev-dean` pushed from the same commit; `CLAUDE.md` added with the no-AI-attribution rule |
 | 10 | Was `dev-dean` meant for merchant-portal too? Skipped under the SCOPE RULE (`ai-core/08`) | User | Awaiting answer |
 | 11 | Postgres credentials so `composer test` can run locally | User | Done 2026-09-16: credentials in gasa-api `.env` (git-ignored), `gasa` and `gasa_api_test` created, suite run (section 4.3) |
-| 12 | gasa-api commit plan once tests pass, per its "one commit per logical feature" rule. Proposal: (a) `feat(company): Company domain, tenancy and employee roster (P11)` for domain + migrations + tests + README, (b) `chore(seed): company rosters in DevSeeder and StagingCompanySeeder`. Then a PR `dev-dean` -> `main`. Note the API's CLAUDE.md forbids AI attribution lines in commits | User | Awaiting answer |
+| 12 | gasa-api commit plan | User | Done 2026-09-16: `966e1ac` feat(company) + `7ffbe60` chore(seed) on `dev-dean`, no attribution lines. Push and PR blocked by Q14 |
 | 13 | Employee invites (portal accounts) and `POST /admin/companies`: raise with the API team as the next Company phases (section 4.3 follow-ups) | User / API team | Not started |
+| 14 | `git push` to `swiftlyph/gasa-api` is denied for GitHub user `dinmaku` (HTTP 403). Ask the repo owner for write access (or push from the account that has it), then run `git push -u origin dev-dean` in gasa-api and open the PR | User | **Blocks the gasa-api push and PR** |
 
 ---
 
@@ -429,10 +431,11 @@ npm run typecheck && npm run lint && npm run test && npm run build
 | `company-portal/apps/web/` (section 7) | App code, tests, `vite.config.ts`, `vitest.setup.ts`, `.env.example`, `.env.local` (git-ignored), `index.html`, `package.json` (deps + `test` script), `tsconfig.app.json` (includes the setup file). Scaffold `App.tsx` removed |
 | `company-portal/packages/ui/` | shadcn components added (input, label, card, table, dialog, alert-dialog, select, badge, dropdown-menu, sidebar, sheet, tooltip, separator, skeleton, avatar, breadcrumb, field, alert, pagination); `hooks/use-mobile.ts` moved in from the app; generated `sonner.tsx` removed (the app has its own Toaster) |
 | `company-portal/` root | `README.md` rewritten; `turbo.json` + `package.json` gained `test`; `.gitignore` allows `.env.example`; `package-lock.json` regenerated by npm 11 |
+| `company-portal/CLAUDE.md`, `.gitattributes` | Added: the no-AI-attribution commit rule; `* text=auto eol=lf` like gasa-api, so Windows checkouts stop warning about CRLF on every commit |
 | `company-portal/asset/gasa-icon.png` (user-supplied source) -> `apps/web/public/gasa-icon.png` | Cropped to the circle, 512x512, transparent corners. Used as the favicon (`index.html`), the sidebar brand tile (`app-sidebar.tsx`) and on the login card + brand panel (`login-page.tsx`, replacing the screenshot placeholder) |
 | `company-portal/docs/tasks/HANDOFF.md` | Rewritten for this session |
 
-Nothing committed in either repo. merchant-portal unchanged (read only).
+company-portal: committed and pushed (`main` @ `34a7303`; later commits on `dev-dean`). gasa-api: committed on `dev-dean`, not pushed (Q14). merchant-portal unchanged (read only).
 
 ### 2026-09-16 (earlier)
 
