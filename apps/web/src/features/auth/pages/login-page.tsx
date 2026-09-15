@@ -1,0 +1,206 @@
+import { useEffect, useState, type FormEvent } from "react"
+import { Navigate, useLocation, useNavigate } from "react-router-dom"
+import { useMutation } from "@tanstack/react-query"
+import { Alert, AlertDescription } from "@workspace/ui/components/alert"
+import { Button } from "@workspace/ui/components/button"
+import { Card, CardContent } from "@workspace/ui/components/card"
+import { Field, FieldError, FieldGroup, FieldLabel } from "@workspace/ui/components/field"
+import { Input } from "@workspace/ui/components/input"
+import { ThemeToggle } from "@/components/theme-toggle"
+import { ApiError } from "@/lib/api/client"
+import type { ApiFieldErrors } from "@/lib/api/types"
+import { login } from "../api"
+import { useAuthStore } from "../store"
+
+// Mirrors the backend's login throttle window (429 "too_many_attempts" after
+// the 6th attempt within a rolling minute): matched here, not invented, so
+// the UI doesn't invite a retry the server will just reject again.
+const RETRY_COOLDOWN_SECONDS = 60
+
+interface LocationState {
+  from?: { pathname: string }
+}
+
+/**
+ * merchant-portal's login page (shadcn's login-04 block) with the company
+ * portal's copy and error cases. Same shape: centered split card, field
+ * errors from a 422, a cooldown on 429, and the session-expiry notice.
+ */
+export function LoginPage() {
+  const status = useAuthStore((s) => s.status)
+  const sessionNotice = useAuthStore((s) => s.sessionNotice)
+  const setSessionNotice = useAuthStore((s) => s.setSessionNotice)
+  const setAuthed = useAuthStore((s) => s.setAuthed)
+  const navigate = useNavigate()
+  const location = useLocation()
+
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
+  const [fieldErrors, setFieldErrors] = useState<ApiFieldErrors>({})
+  const [formAlert, setFormAlert] = useState<string | null>(null)
+  const [cooldown, setCooldown] = useState(0)
+
+  useEffect(() => {
+    if (cooldown <= 0) return
+    const id = setInterval(() => setCooldown((c) => Math.max(0, c - 1)), 1000)
+    return () => clearInterval(id)
+  }, [cooldown])
+
+  const mutation = useMutation({
+    mutationFn: login,
+    onSuccess: ({ token, user }) => {
+      setAuthed(token, user)
+      const from = (location.state as LocationState | null)?.from?.pathname ?? "/app"
+      void navigate(from, { replace: true })
+    },
+    onError: (error: unknown) => {
+      if (!(error instanceof ApiError)) {
+        setFormAlert("Something went wrong. Please try again.")
+        return
+      }
+      if (error.status === 422) {
+        setFieldErrors(error.errors ?? {})
+        return
+      }
+      if (error.status === 401 && error.code === "invalid_credentials") {
+        setFormAlert("Email or password is incorrect")
+        return
+      }
+      if (error.status === 429) {
+        setFormAlert("Too many attempts, try again in a minute")
+        setCooldown(RETRY_COOLDOWN_SECONDS)
+        return
+      }
+      if (error.status === 403 && error.code === "portal_forbidden") {
+        setFormAlert("This account can't access the company portal")
+        return
+      }
+      // No case for 403 "company_inactive": login succeeds for a suspended
+      // company's admin (backend contract), and routing (RequireActiveCompany)
+      // sends them to /inactive rather than treating it as a login error.
+      setFormAlert(error.message)
+    },
+  })
+
+  // Already signed in: don't show the login form at all.
+  if (status === "authed") {
+    return <Navigate to="/app" replace />
+  }
+
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    setFormAlert(null)
+
+    const errors: ApiFieldErrors = {}
+    if (!email.trim()) errors.email = ["Email is required."]
+    if (!password) errors.password = ["Password is required."]
+    setFieldErrors(errors)
+    if (Object.keys(errors).length > 0) return
+
+    mutation.mutate({ email, password })
+  }
+
+  const submitDisabled = mutation.isPending || cooldown > 0
+
+  return (
+    <div className="relative flex min-h-svh flex-col items-center justify-center bg-muted p-6 md:p-10">
+      <div className="absolute top-4 right-4 z-10">
+        <ThemeToggle />
+      </div>
+
+      <div className="flex w-full max-w-sm flex-col gap-6 md:max-w-4xl">
+        <Card className="overflow-hidden p-0">
+          <CardContent className="grid p-0 md:grid-cols-2">
+            <form className="p-6 md:p-8" onSubmit={handleSubmit} noValidate>
+              <FieldGroup>
+                <div className="flex flex-col items-center gap-2 text-center">
+                  <img src="/gasa-icon.png" alt="" className="size-14 rounded-full" />
+                  <h1 className="text-2xl font-bold">
+                    <span className="text-primary">GASA</span> Company Portal
+                  </h1>
+                  <p className="text-balance text-muted-foreground">
+                    Sign in to manage your employees and their benefits
+                  </p>
+                </div>
+
+                {sessionNotice && (
+                  <Alert>
+                    <AlertDescription className="flex items-center justify-between gap-2">
+                      <span>{sessionNotice}</span>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon-xs"
+                        onClick={() => setSessionNotice(null)}
+                        aria-label="Dismiss"
+                      >
+                        ✕
+                      </Button>
+                    </AlertDescription>
+                  </Alert>
+                )}
+
+                {formAlert && (
+                  <Alert variant="destructive">
+                    <AlertDescription>{formAlert}</AlertDescription>
+                  </Alert>
+                )}
+
+                <Field data-invalid={fieldErrors.email ? true : undefined}>
+                  <FieldLabel htmlFor="email">Email</FieldLabel>
+                  <Input
+                    id="email"
+                    type="email"
+                    name="email"
+                    autoComplete="email"
+                    placeholder="you@company.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    aria-invalid={fieldErrors.email ? true : undefined}
+                  />
+                  <FieldError errors={fieldErrors.email?.map((message) => ({ message }))} />
+                </Field>
+
+                <Field data-invalid={fieldErrors.password ? true : undefined}>
+                  <FieldLabel htmlFor="password">Password</FieldLabel>
+                  <Input
+                    id="password"
+                    type="password"
+                    name="password"
+                    autoComplete="current-password"
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    aria-invalid={fieldErrors.password ? true : undefined}
+                  />
+                  <FieldError errors={fieldErrors.password?.map((message) => ({ message }))} />
+                </Field>
+
+                <Field>
+                  <Button type="submit" disabled={submitDisabled}>
+                    {cooldown > 0
+                      ? `Try again in ${cooldown}s`
+                      : mutation.isPending
+                        ? "Signing in…"
+                        : "Sign in"}
+                  </Button>
+                </Field>
+              </FieldGroup>
+            </form>
+
+            {/* Visual side: brand-color panel with the GASA mark. */}
+            <div className="relative hidden flex-col items-center justify-center gap-6 bg-primary p-12 text-center text-primary-foreground md:flex">
+              <img src="/gasa-icon.png" alt="GASA" className="size-40 rounded-full shadow-xl" />
+              <div>
+                <p className="text-lg font-semibold">Your workforce benefits, in one place</p>
+                <p className="mt-1 text-sm text-primary-foreground/80">
+                  Employees, allowances and merchants, managed from the company portal.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  )
+}
