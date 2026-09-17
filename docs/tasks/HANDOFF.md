@@ -10,13 +10,13 @@
 
 | Item | State | Pending |
 |---|---|---|
-| Last sync (`ai-core/08` SYNC RULE) | 2026-09-18 02:18 +08:00. company-portal `dev-dean` @ `5db5e97`, `origin/main` @ `34a7303`; gasa-api `dev-dean` @ `ecaf13d`, `origin/main` @ `7f53b6b` (PR #6 merged). Both `dev-dean` branches pushed. | Open the gasa-api follow-up PR; sync again at the next session start or by 2026-09-18 10:18 in this session |
-| Working branch (`ai-core/08` BRANCH RULE) | `dev-dean` in both repos. company-portal: `dev-dean` pushed at `5db5e97`. gasa-api: `dev-dean` pushed at `ecaf13d`; PR #6 is merged into `main` at `7f53b6b`, and the lint fix is one follow-up commit ahead. merchant-portal untouched, on `main` | Q10: was merchant-portal meant too? |
+| Last sync (`ai-core/08` SYNC RULE) | 2026-09-18 02:55 +08:00. company-portal `dev-dean` @ `6e5369c`, `origin/main` @ `34a7303`; gasa-api `dev-dean` @ `ecaf13d`, `origin/main` @ `7f53b6b` (PR #6 merged). Both `dev-dean` branches pushed. | Commit and push the company-portal workflow files; open the gasa-api follow-up PR; sync again at the next session start or by 2026-09-18 10:55 in this session |
+| Working branch (`ai-core/08` BRANCH RULE) | `dev-dean` in both repos. company-portal: `dev-dean` pushed at `6e5369c`, with new workflow files pending. gasa-api: `dev-dean` pushed at `ecaf13d`; PR #6 is merged into `main` at `7f53b6b`, and the lint fix is one follow-up commit ahead. merchant-portal untouched, on `main` | Q10: was merchant-portal meant too? |
 | gasa-api: Company domain + employee roster | **Committed on `dev-dean` 2026-09-16: `966e1ac` (domain) + `7ffbe60` (seeders); included in PR #6, merged 2026-09-18 at `7f53b6b`** (section 4.3). Pint, Larastan and Pest pass locally (490 passed on the rerun; the only failure is the Redis-only health check) | Open the follow-up PR for `ecaf13d` |
 | gasa-api: departments, employee fields, CSV import/export, per-employee allowance grants | **Built, committed and pushed 2026-09-18 on `dev-dean` as `ddc4faf`; PR #6 merged at `7f53b6b`.** The post-merge Pint failure was fixed in follow-up commit `ecaf13d`; allowance consumption in merchant checkout remains Q19 | Open a follow-up PR from `dev-dean` to `main` |
 | Local environment | gasa-api `.env` (git-ignored) has the local Postgres credentials and file/sync drivers (no Redis on this machine); databases `gasa` (migrated + seeded) and `gasa_api_test` exist. Both apps ran and were smoke-tested end to end on 2026-09-16 (section 11) | None |
 | company-portal: login, shell, dashboard, Employees | **Pushed 2026-09-16: `main` @ `34a7303` (3 commits: scaffold, feature, docs), GitHub's default branch; `dev-dean` pushed from the same commit** (section 7). `build`, `lint`, `test` (26), `typecheck` pass. `CLAUDE.md` added (no AI attribution, like the other repos) | New commits go on `dev-dean` and reach `main` by PR |
-| company-portal: departments, employee detail page, import/export, richer form, allowance panel/grant dialog | **Built, committed and pushed 2026-09-18 on `dev-dean` as `289a5fb`** (sections 7.1 and 7.2). `lint`, `typecheck`, `test` (55) and `build` pass | New commits go on `dev-dean` and reach `main` by PR |
+| company-portal: departments, employee detail page, import/export, richer form, allowance panel/grant dialog | **Built, committed and pushed 2026-09-18 on `dev-dean` as `289a5fb`** (sections 7.1 and 7.2). `lint`, `typecheck`, `test` (55) and `build` pass. Automated CI and post-success SSH deployment workflows now live in `.github/workflows/` | Merge to `main` after CI; deployment uses the configured SSH secrets |
 | Staging evidence account | `StagingCompanySeeder` (section 4.3), manual, not yet run anywhere | Run on staging after the gasa-api PR merges |
 | Workspace `E:\Desktop\gasa` | Set up. We only work in company-portal and gasa-api (`ai-core/08`) | None |
 | Old `E:\Desktop\company-portal` | Duplicate of `gasa/company-portal` (verified identical on 2026-09-11) | User deletes it after reopening VS Code at `E:\Desktop\gasa` |
@@ -484,7 +484,7 @@ flowchart TD
 
 Tests (Vitest 4 + Testing Library, 26 passing): API client, auth store, employees API parsing, employees page (list, URL filters, empty, error, add and edit dialogs).
 
-Not done: employee detail page, CSV import, sorting controls, the three placeholder sections, a `CLAUDE.md`, a CI workflow for company-portal (merchant-portal's `.github` can be copied when the repo is first pushed).
+Not done: sorting controls and the three placeholder sections. `CLAUDE.md`, CI and automated deployment workflows are now present.
 
 ### 7.1 Added 2026-09-18 (`dev-dean`, pushed as `289a5fb`)
 
@@ -527,6 +527,7 @@ The employee detail page now fetches `GET /company/employees/{id}/allowance`, di
 | 2026-09-18 | User said go ahead on the no-sign-off part of 5.1, and asked whether gasa-api was pushed (no: checked the remote, `dev-dean` is not there, Q14). Built departments, the new employee fields, the status/separation coupling, mobile normalization, and CSV import (preview/commit) + export in gasa-api (section 4.4); built the portal's departments page, employee detail page, import screen, export, and the richer form and filters (section 7.1). Found and explained the API's timing-flaky query-count tests. Nothing committed. |
 | 2026-09-18 | User asked to implement per-employee points/allowance. Built company-scoped allowance accounts and an append-only ledger, idempotent grants, read/grant API routes, local and staging fixtures, and the employee detail balance/activity panel with a grant dialog (sections 4.5 and 7.2). Focused API tests (7), portal tests (55), typecheck, lint, build, Pint and Larastan pass. Full Pest: 541 passed; two unrelated pre-existing failures remain, the local Redis health check and timing-flaky Receipt query-count test. Live smoke test: Company One's Maria Santos returns 150,000 cents. Committed and pushed as company-portal `289a5fb` and gasa-api `ddc4faf`. |
 | 2026-09-18 | User asked to push both affected repos. Pushed `dev-dean` to company-portal (`289a5fb`) and gasa-api (`ddc4faf`, new remote branch). User resolved and merged gasa-api PR #6; post-merge Pint found unused imports and an extra EOF blank line in `TenantLeakageTest.php`, fixed and pushed as `ecaf13d`. |
+| 2026-09-18 | User asked for automatic company-portal deployment after successful pushes. Added `.github/workflows/ci.yml` for Node 22 lint/typecheck/test/build and `.github/workflows/deploy.yml` to SSH to `/var/www/company-portal`, update `main`, rebuild the SPA and reload nginx after successful `main` CI. |
 
 ---
 
@@ -624,6 +625,7 @@ npm run typecheck && npm run lint && npm run test && npm run build
 | `gasa-api/routes/api/v1/company.php`, `gasa-api/app/Domains/Company/Policies/EmployeePolicy.php` | Allowance read/grant routes and company-owned employee allowance authorization |
 | `gasa-api/database/seeders/DevSeeder.php`, `gasa-api/database/seeders/StagingCompanySeeder.php`, `gasa-api/tests/Feature/Company/AllowanceTest.php` | Known local/staging allowance fixtures and seven API tests |
 | `company-portal/apps/web/src/features/employees/` | Allowance types, API functions, query/mutation hooks, grant dialog, balance/activity panel, formatter and tests |
+| `company-portal/.github/workflows/{ci,deploy}.yml` | Portal CI and post-success SSH deployment to the staging server |
 
 2026-09-18 work is committed and pushed: company-portal `289a5fb`, gasa-api `ddc4faf`. merchant-portal unchanged (read only).
 
