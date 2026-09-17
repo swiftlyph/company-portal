@@ -41,6 +41,55 @@ describe("api client", () => {
     expect(headers.get("Authorization")).toBe("Bearer abc123")
   })
 
+  it("sends a plain body as JSON", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(jsonResponse(201, {}))
+
+    await api.post("/company/departments", { name: "Finance" })
+
+    const [, init] = fetchSpy.mock.calls[0]!
+    expect(new Headers(init?.headers).get("Content-Type")).toBe("application/json")
+    expect(init?.body).toBe('{"name":"Finance"}')
+  })
+
+  it("passes a FormData body through untouched, leaving Content-Type to the browser", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(jsonResponse(200, {}))
+    const form = new FormData()
+    form.append("mode", "preview")
+
+    await api.post("/company/employees/import", form)
+
+    const [, init] = fetchSpy.mock.calls[0]!
+    // Setting it by hand would drop the multipart boundary.
+    expect(new Headers(init?.headers).has("Content-Type")).toBe(false)
+    expect(init?.body).toBe(form)
+  })
+
+  it("downloads a file response as a Blob, with the token attached", async () => {
+    registerTokenGetter(() => "abc123")
+    const fetchSpy = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue(new Response("employee_no,first_name\r\n", { status: 200, headers: { "Content-Type": "text/csv" } }))
+
+    const blob = await api.download("/company/employees/export?status=active")
+
+    // Size, not text(): the test environment's Blob has no text() method.
+    expect(blob.size).toBe("employee_no,first_name\r\n".length)
+    const [url, init] = fetchSpy.mock.calls[0]!
+    expect(String(url)).toMatch(/\/company\/employees\/export\?status=active$/)
+    expect(new Headers(init?.headers).get("Authorization")).toBe("Bearer abc123")
+  })
+
+  it("still throws an ApiError when a download is refused", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      jsonResponse(403, { message: "Your company account is not active.", code: "company_inactive" }),
+    )
+
+    await expect(api.download("/company/employees/export")).rejects.toMatchObject({
+      status: 403,
+      code: "company_inactive",
+    })
+  })
+
   it("normalizes a 422 into an ApiError exposing the field errors map", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue(
       jsonResponse(422, {

@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom"
 import { PencilIcon, Trash2Icon } from "lucide-react"
 import { Button } from "@workspace/ui/components/button"
 import {
@@ -9,7 +10,7 @@ import {
   TableRow,
 } from "@workspace/ui/components/table"
 import { EmployeeStatusBadge } from "./employee-status-badge"
-import { EMPTY_VALUE, formatDate } from "../format"
+import { EMPLOYMENT_TYPE_LABEL, EMPTY_VALUE, formatDate } from "../format"
 import type { Employee } from "../types"
 
 interface EmployeesTableProps {
@@ -28,8 +29,9 @@ export function EmployeesTable({ employees, isFetching, onEdit, onRemove }: Empl
           <TableHead>Employee</TableHead>
           <TableHead className="hidden md:table-cell">Employee no.</TableHead>
           <TableHead className="hidden lg:table-cell">Department</TableHead>
-          <TableHead className="hidden lg:table-cell">Job title</TableHead>
-          <TableHead className="hidden md:table-cell">Hired</TableHead>
+          <TableHead className="hidden xl:table-cell">Job title</TableHead>
+          <TableHead className="hidden xl:table-cell">Type</TableHead>
+          <TableHead className="hidden lg:table-cell">Hired</TableHead>
           <TableHead>Status</TableHead>
           <TableHead>
             <span className="sr-only">Actions</span>
@@ -41,7 +43,12 @@ export function EmployeesTable({ employees, isFetching, onEdit, onRemove }: Empl
           <TableRow key={employee.id}>
             <TableCell>
               <div className="flex flex-col">
-                <span className="font-medium">{employee.full_name}</span>
+                <Link
+                  to={`/app/employees/${employee.id}`}
+                  className="font-medium underline-offset-4 hover:underline"
+                >
+                  {employee.full_name}
+                </Link>
                 <span className="text-xs text-muted-foreground">{employee.email}</span>
               </div>
             </TableCell>
@@ -49,12 +56,15 @@ export function EmployeesTable({ employees, isFetching, onEdit, onRemove }: Empl
               {employee.employee_no ?? EMPTY_VALUE}
             </TableCell>
             <TableCell className="hidden text-muted-foreground lg:table-cell">
-              {employee.department ?? EMPTY_VALUE}
+              {employee.department?.name ?? EMPTY_VALUE}
             </TableCell>
-            <TableCell className="hidden text-muted-foreground lg:table-cell">
+            <TableCell className="hidden text-muted-foreground xl:table-cell">
               {employee.job_title ?? EMPTY_VALUE}
             </TableCell>
-            <TableCell className="hidden text-muted-foreground md:table-cell">
+            <TableCell className="hidden text-muted-foreground xl:table-cell">
+              {EMPLOYMENT_TYPE_LABEL[employee.employment_type]}
+            </TableCell>
+            <TableCell className="hidden text-muted-foreground lg:table-cell">
               {formatDate(employee.hired_at)}
             </TableCell>
             <TableCell>

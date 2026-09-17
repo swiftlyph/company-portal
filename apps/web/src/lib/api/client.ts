@@ -7,6 +7,11 @@ import { ApiError, type ApiErrorShape } from "./types";
  * app-level hooks for responses that must change routing wherever they
  * happen. The merchant-only hooks (merchant_inactive, permission_denied)
  * are replaced by the company equivalent.
+ *
+ * Two additions over the original, both needed by the employee roster: a
+ * FormData body passes through untouched (CSV upload), and `api.download`
+ * returns a Blob (CSV export). A bearer-token API can't be reached with a
+ * plain <a href>, so downloads have to come through here too.
  */
 
 const BASE_URL = import.meta.env.VITE_API_URL as string;
@@ -43,6 +48,7 @@ export function registerOnCompanyInactive(cb: CompanyInactiveCallback): void {
 }
 
 export interface RequestOptions extends Omit<RequestInit, "body"> {
+  /** A plain value is sent as JSON; a FormData is sent as multipart, untouched. */
   body?: unknown;
   /**
    * Skip the registered onUnauthorized callback for this call even on a 401.
@@ -69,15 +75,17 @@ async function parseErrorBody(response: Response): Promise<ApiErrorShape> {
   }
 }
 
-export async function apiRequest<T>(
-  path: string,
-  options: RequestOptions = {},
-): Promise<T> {
+/** Sends the request and returns the OK response; everything else throws an ApiError. */
+async function send(path: string, options: RequestOptions): Promise<Response> {
   const { body, headers, suppressUnauthorized, ...rest } = options;
+
+  const isFormData = typeof FormData !== "undefined" && body instanceof FormData;
 
   const finalHeaders = new Headers(headers);
   finalHeaders.set("Accept", "application/json");
-  if (body !== undefined) {
+  // Never set for FormData: the browser adds the multipart boundary itself,
+  // and a hand-written Content-Type would leave it out.
+  if (body !== undefined && !isFormData) {
     finalHeaders.set("Content-Type", "application/json");
   }
   const token = getToken();
@@ -90,7 +98,7 @@ export async function apiRequest<T>(
     response = await fetch(`${BASE_URL}${path}`, {
       ...rest,
       headers: finalHeaders,
-      body: body !== undefined ? JSON.stringify(body) : undefined,
+      body: body === undefined ? undefined : isFormData ? body : JSON.stringify(body),
     });
   } catch (error) {
     // An aborted request (TanStack Query cancelling a stale list fetch) is
@@ -113,6 +121,15 @@ export async function apiRequest<T>(
     throw error;
   }
 
+  return response;
+}
+
+export async function apiRequest<T>(
+  path: string,
+  options: RequestOptions = {},
+): Promise<T> {
+  const response = await send(path, options);
+
   if (response.status === 204) {
     return undefined as T;
   }
@@ -131,6 +148,11 @@ export const api = {
     apiRequest<T>(path, { ...options, method: "PATCH", body }),
   delete: <T>(path: string, options?: RequestOptions) =>
     apiRequest<T>(path, { ...options, method: "DELETE" }),
+  /** A file response (the CSV export). Errors still arrive as JSON and throw ApiError. */
+  download: async (path: string, options?: RequestOptions): Promise<Blob> => {
+    const response = await send(path, { ...options, method: "GET" });
+    return response.blob();
+  },
 };
 
 export { ApiError };
