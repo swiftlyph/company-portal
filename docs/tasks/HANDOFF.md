@@ -1,6 +1,6 @@
 # HANDOFF: Gasa workspace
 
-- **Last updated:** 2026-09-18
+- **Last updated:** 2026-09-18 (deployment handoff parked)
 - **Previous session:** started in `E:\Desktop\company-portal`, continuing in `E:\Desktop\gasa`
 - **Location:** `E:\Desktop\gasa\company-portal\docs\tasks\HANDOFF.md`. Moved out of the gasa root on 2026-09-11 (`ai-core/08` FILE PLACEMENT RULE), so it is committed with company-portal and shared with the team.
 
@@ -10,14 +10,15 @@
 
 | Item | State | Pending |
 |---|---|---|
-| Last sync (`ai-core/08` SYNC RULE) | 2026-09-18 02:57 +08:00. company-portal `dev-dean` @ `4997b33`, `origin/main` @ `34a7303`; gasa-api `dev-dean` @ `ecaf13d`, `origin/main` @ `7f53b6b` (PR #6 merged). Both `dev-dean` branches pushed. | Merge the company-portal workflow files to `main`, configure GitHub Actions SSH secrets, open the gasa-api follow-up PR; sync again at the next session start or by 2026-09-18 10:57 in this session |
-| Working branch (`ai-core/08` BRANCH RULE) | `dev-dean` in both repos. company-portal: `dev-dean` pushed at `4997b33`, with CI and post-success deployment workflows. gasa-api: `dev-dean` pushed at `ecaf13d`; PR #6 is merged into `main` at `7f53b6b`, and the lint fix is one follow-up commit ahead. merchant-portal untouched, on `main` | Q10: was merchant-portal meant too? |
+| Last sync (`ai-core/08` SYNC RULE) | 2026-09-18. company-portal `dev-dean` @ `41ef3f0`, `origin/main` @ `0b0c4da`; gasa-api `dev-dean` @ `ecaf13d`, `origin/main` @ `a18b1e6` (PR #7 merged). Both `dev-dean` branches are pushed. | Sync again at the next session start or before the next branch, commit or push |
+| Working branch (`ai-core/08` BRANCH RULE) | `dev-dean` in both repos. company-portal: `dev-dean` pushed at `41ef3f0`, with CI and post-success deployment workflows. gasa-api: `dev-dean` pushed at `ecaf13d`; PR #7 is merged into `main` at `a18b1e6`. merchant-portal untouched, on `main` | Q10: was merchant-portal meant too? |
 | gasa-api: Company domain + employee roster | **Committed on `dev-dean` 2026-09-16: `966e1ac` (domain) + `7ffbe60` (seeders); included in PR #6, merged 2026-09-18 at `7f53b6b`** (section 4.3). Pint, Larastan and Pest pass locally (490 passed on the rerun; the only failure is the Redis-only health check) | Open the follow-up PR for `ecaf13d` |
-| gasa-api: departments, employee fields, CSV import/export, per-employee allowance grants | **Built, committed and pushed 2026-09-18 on `dev-dean` as `ddc4faf`; PR #6 merged at `7f53b6b`.** The post-merge Pint failure was fixed in follow-up commit `ecaf13d`; allowance consumption in merchant checkout remains Q19 | Open a follow-up PR from `dev-dean` to `main` |
+| gasa-api: departments, employee fields, CSV import/export, per-employee allowance grants | **Built, committed and pushed 2026-09-18 on `dev-dean` as `ddc4faf`; PR #6 merged at `7f53b6b`.** The post-merge Pint failure was fixed in follow-up commit `ecaf13d`, and PR #7 is merged at `a18b1e6`; allowance consumption in merchant checkout remains Q19 | None for this slice |
 | Local environment | gasa-api `.env` (git-ignored) has the local Postgres credentials and file/sync drivers (no Redis on this machine); databases `gasa` (migrated + seeded) and `gasa_api_test` exist. Both apps ran and were smoke-tested end to end on 2026-09-16 (section 11) | None |
-| company-portal: login, shell, dashboard, Employees | **Pushed 2026-09-16: `main` @ `34a7303` (3 commits: scaffold, feature, docs), GitHub's default branch; `dev-dean` pushed from the same commit** (section 7). `build`, `lint`, `test` (26), `typecheck` pass. `CLAUDE.md` added (no AI attribution, like the other repos) | New commits go on `dev-dean` and reach `main` by PR |
-| company-portal: departments, employee detail page, import/export, richer form, allowance panel/grant dialog | **Built, committed and pushed 2026-09-18 on `dev-dean` as `289a5fb`** (sections 7.1 and 7.2). `lint`, `typecheck`, `test` (55) and `build` pass. Automated CI and post-success SSH deployment workflows now live in `.github/workflows/` | Merge to `main` after CI; deployment uses the configured SSH secrets |
-| Staging evidence account | `StagingCompanySeeder` (section 4.3), manual, not yet run anywhere | Run on staging after the gasa-api PR merges |
+| company-portal: login, shell, dashboard, Employees | **Pushed 2026-09-16: `main` @ `34a7303` (3 commits: scaffold, feature, docs), GitHub's default branch; later portal changes are on `dev-dean`** (section 7). `build`, `lint`, `test` (26), `typecheck` pass. `CLAUDE.md` added (no AI attribution, like the other repos) | New commits go on `dev-dean` and reach `main` by PR |
+| company-portal: departments, employee detail page, import/export, richer form, allowance panel/grant dialog | **Built, committed and pushed 2026-09-18 on `dev-dean` as `41ef3f0`** (sections 7.1 and 7.2). `lint`, `typecheck`, `test` (55) and `build` pass. Automated CI and post-success SSH deployment workflows now live in `.github/workflows/` | Verify automatic deployment when the next company-portal update reaches `main` |
+| company-portal staging deployment | SSH key login as `linuxuser` verified; passwordless sudo verified. GitHub repository secrets `DEPLOY_HOST`, `DEPLOY_USER` and `DEPLOY_SSH_KEY` configured. | No deployment run verified yet; parked until the next portal update reaches `main` |
+| Staging evidence account | `StagingCompanySeeder` (section 4.3), manual, not yet run anywhere | Run on staging when evidence-account testing resumes |
 | Workspace `E:\Desktop\gasa` | Set up. We only work in company-portal and gasa-api (`ai-core/08`) | None |
 | Old `E:\Desktop\company-portal` | Duplicate of `gasa/company-portal` (verified identical on 2026-09-11) | User deletes it after reopening VS Code at `E:\Desktop\gasa` |
 | Merchant integration approach | Recommended (section 5) | Team and API owner sign-off |
@@ -30,6 +31,7 @@
 3. Read this file top to bottom.
 4. Run the gasa-api suite (section 11) after any gasa-api change; the local databases are ready.
 5. Answer the open questions in section 9, then continue.
+6. When the next company-portal change reaches `main`, check GitHub Actions `CI` followed by the post-success deployment workflow and smoke-test `company-staging.swiftlyph.online`.
 
 ---
 
@@ -502,6 +504,12 @@ Client: `lib/api/client.ts` now passes a `FormData` body through untouched (CSV 
 
 The employee detail page now fetches `GET /company/employees/{id}/allowance`, displays the derived PHP balance and recent ledger activity, and lets an active employee receive a grant through a dialog. Grant requests send amount in cents, a reason and a client-generated idempotency key. The portal shows 55 passing tests after this addition. Allowance spending at merchant checkout is not connected yet.
 
+### 7.3 Added 2026-09-18: automatic staging deployment parked
+
+`company-portal/.github/workflows/ci.yml` runs lint, typecheck, tests and build for pull requests and pushes to `main`. `company-portal/.github/workflows/deploy.yml` runs after a successful `CI` workflow on `main`, connects to `64.176.81.108` as `linuxuser`, fast-forwards `/var/www/company-portal`, installs dependencies, builds the portal and reloads nginx.
+
+Staging setup was checked manually: `linuxuser` public-key login works, `sudo -n true` succeeds, and the repository secrets `DEPLOY_HOST`, `DEPLOY_USER` and `DEPLOY_SSH_KEY` are configured. The workflow has not yet been verified end to end because there is no pending company-portal update to merge to `main`. Resume this check with the next portal change; do not add secrets or regenerate the SSH key unless that test fails.
+
 ---
 
 ## 8. Session log
@@ -529,6 +537,7 @@ The employee detail page now fetches `GET /company/employees/{id}/allowance`, di
 | 2026-09-18 | User asked to push both affected repos. Pushed `dev-dean` to company-portal (`289a5fb`) and gasa-api (`ddc4faf`, new remote branch). User resolved and merged gasa-api PR #6; post-merge Pint found unused imports and an extra EOF blank line in `TenantLeakageTest.php`, fixed and pushed as `ecaf13d`. |
 | 2026-09-18 | User asked for automatic company-portal deployment after successful pushes. Added `.github/workflows/ci.yml` for Node 22 lint/typecheck/test/build and `.github/workflows/deploy.yml` to SSH to `/var/www/company-portal`, update `main`, rebuild the SPA and reload nginx after successful `main` CI. |
 | 2026-09-18 | Portal CI initially exposed pre-existing `packages/ui` lint failures under the root Turbo check. Added the standard Fast Refresh export exemptions and refactored `useIsMobile` to avoid synchronous effect state updates. Root lint, typecheck, 55 tests and build now pass locally. |
+| 2026-09-18 | Parked automatic company-portal deployment verification (section 7.3). Confirmed SSH key login as `linuxuser`, passwordless sudo and the three GitHub Actions repository secrets. The next portal update reaching `main` is the pending end-to-end deployment test. |
 
 ---
 
@@ -555,6 +564,7 @@ The employee detail page now fetches `GET /company/employees/{id}/allowance`, di
 | 17 | Commit and push the 2026-09-18 employee-management and allowance work on `dev-dean` | User | **Done 2026-09-18: company-portal `289a5fb`; gasa-api `ddc4faf`** |
 | 18 | Tell the API team their query-count ("no N+1") tests are timing-flaky and why (section 4.4); the fix is to freeze time in them | User | Not started |
 | 19 | Connect allowance consumption, reversals and expiry to merchant checkout and the future allowance plans module | User / API and merchant teams | Not started; current grant and read-only ledger slice is in section 4.5 |
+| 20 | Verify automatic company-portal deployment after a future update reaches `main` | User / Claude | **Parked 2026-09-18:** SSH, sudo and secrets are ready; no new portal update was available to trigger the workflow |
 
 ---
 
