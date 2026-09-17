@@ -1,6 +1,6 @@
 # HANDOFF: Gasa workspace
 
-- **Last updated:** 2026-09-16
+- **Last updated:** 2026-09-18
 - **Previous session:** started in `E:\Desktop\company-portal`, continuing in `E:\Desktop\gasa`
 - **Location:** `E:\Desktop\gasa\company-portal\docs\tasks\HANDOFF.md`. Moved out of the gasa root on 2026-09-11 (`ai-core/08` FILE PLACEMENT RULE), so it is committed with company-portal and shared with the team.
 
@@ -10,11 +10,13 @@
 
 | Item | State | Pending |
 |---|---|---|
-| Last sync (`ai-core/08` SYNC RULE) | 2026-09-16 00:54 +08:00. gasa-api `main` @ `69be9c4` (P10, section 4.2); `dev-dean` = `main`. company-portal remote still empty | Sync again at the next session start, or by 2026-09-16 08:54 in this session |
-| Working branch (`ai-core/08` BRANCH RULE) | `dev-dean` checked out in company-portal and gasa-api, local only. merchant-portal untouched, on `main` | Push `dev-dean` when the user says so. Q10: was merchant-portal meant too? |
-| gasa-api: Company domain + employee roster | **Built 2026-09-16 on `dev-dean`, uncommitted** (section 4.3). Pint, Larastan and the Pest suite pass locally (490 passed on the rerun; the only failure is the Redis-only health check, see 4.3) | Q12: commit plan, then PR `dev-dean` -> `main` |
+| Last sync (`ai-core/08` SYNC RULE) | 2026-09-18 02:57 +08:00. company-portal `dev-dean` @ `4997b33`, `origin/main` @ `34a7303`; gasa-api `dev-dean` @ `ecaf13d`, `origin/main` @ `7f53b6b` (PR #6 merged). Both `dev-dean` branches pushed. | Merge the company-portal workflow files to `main`, configure GitHub Actions SSH secrets, open the gasa-api follow-up PR; sync again at the next session start or by 2026-09-18 10:57 in this session |
+| Working branch (`ai-core/08` BRANCH RULE) | `dev-dean` in both repos. company-portal: `dev-dean` pushed at `4997b33`, with CI and post-success deployment workflows. gasa-api: `dev-dean` pushed at `ecaf13d`; PR #6 is merged into `main` at `7f53b6b`, and the lint fix is one follow-up commit ahead. merchant-portal untouched, on `main` | Q10: was merchant-portal meant too? |
+| gasa-api: Company domain + employee roster | **Committed on `dev-dean` 2026-09-16: `966e1ac` (domain) + `7ffbe60` (seeders); included in PR #6, merged 2026-09-18 at `7f53b6b`** (section 4.3). Pint, Larastan and Pest pass locally (490 passed on the rerun; the only failure is the Redis-only health check) | Open the follow-up PR for `ecaf13d` |
+| gasa-api: departments, employee fields, CSV import/export, per-employee allowance grants | **Built, committed and pushed 2026-09-18 on `dev-dean` as `ddc4faf`; PR #6 merged at `7f53b6b`.** The post-merge Pint failure was fixed in follow-up commit `ecaf13d`; allowance consumption in merchant checkout remains Q19 | Open a follow-up PR from `dev-dean` to `main` |
 | Local environment | gasa-api `.env` (git-ignored) has the local Postgres credentials and file/sync drivers (no Redis on this machine); databases `gasa` (migrated + seeded) and `gasa_api_test` exist. Both apps ran and were smoke-tested end to end on 2026-09-16 (section 11) | None |
-| company-portal: login, shell, dashboard, Employees | **Built 2026-09-16 on `dev-dean`, uncommitted** (section 7). `build`, `lint`, `test` (26), `typecheck` pass | First commit + push (Q9), then a `CLAUDE.md` decision |
+| company-portal: login, shell, dashboard, Employees | **Pushed 2026-09-16: `main` @ `34a7303` (3 commits: scaffold, feature, docs), GitHub's default branch; `dev-dean` pushed from the same commit** (section 7). `build`, `lint`, `test` (26), `typecheck` pass. `CLAUDE.md` added (no AI attribution, like the other repos) | New commits go on `dev-dean` and reach `main` by PR |
+| company-portal: departments, employee detail page, import/export, richer form, allowance panel/grant dialog | **Built, committed and pushed 2026-09-18 on `dev-dean` as `289a5fb`** (sections 7.1 and 7.2). `lint`, `typecheck`, `test` (55) and `build` pass. Automated CI and post-success SSH deployment workflows now live in `.github/workflows/` | Merge to `main` after CI; deployment uses the configured SSH secrets |
 | Staging evidence account | `StagingCompanySeeder` (section 4.3), manual, not yet run anywhere | Run on staging after the gasa-api PR merges |
 | Workspace `E:\Desktop\gasa` | Set up. We only work in company-portal and gasa-api (`ai-core/08`) | None |
 | Old `E:\Desktop\company-portal` | Duplicate of `gasa/company-portal` (verified identical on 2026-09-11) | User deletes it after reopening VS Code at `E:\Desktop\gasa` |
@@ -33,7 +35,7 @@
 
 ## 1. Project briefing
 
-Gasa is an employee-benefits system. A company loads points/allowance into each employee's e-wallet/card, and employees spend it at merchants. Merchants use Gasa as a mini in-tenant POS for those transactions. The scope below is the MVP; more features will follow.
+Gasa is an employee-benefits (allowance) system. A company grants each employee an allowance, which is a spending entitlement and NOT stored money or e-money, and employees spend it at accredited merchants. Settlement runs through Swiftly, the platform operator: the client company pays Swiftly's invoice and Swiftly pays each merchant. Gasa records the consumption and produces both sets of statements (clarified by the user 2026-09-18, section 5.1). Merchants use Gasa as a mini in-tenant POS for those transactions. The scope below is the MVP; more features will follow.
 
 | Portal | Users | MVP scope |
 |---|---|---|
@@ -72,9 +74,9 @@ Rules (full text in `company-portal/ai-core/08-workspace-rules.md`):
 
 | Repo | Stack | Branch @ HEAD | Repo rules |
 |---|---|---|---|
-| gasa-api | Laravel 12, PHP ^8.2 (8.5 locally), Vite 7, Tailwind 4, PHPStan, Pest | `dev-dean` @ `69be9c4` + uncommitted Company domain (section 4.3) | `CLAUDE.md`: no Co-Authored-By or AI attribution in commits; one commit per logical feature |
+| gasa-api | Laravel 12, PHP ^8.2 (8.5 locally), Vite 7, Tailwind 4, PHPStan, Pest | `dev-dean` @ `ddc4faf`, pushed; `main` @ `42515dd` remains 4 commits ahead and is not merged | `CLAUDE.md`: no Co-Authored-By or AI attribution in commits; one commit per logical feature |
 | merchant-portal | React 18, TypeScript 5.6, Vite 5, Tailwind 4, shadcn (`components.json`), Vitest | `main` @ `252770c` (PR #10: F11 receipt + shift report printing), checked 2026-09-11 | `CLAUDE.md`: no Co-Authored-By or AI attribution in commits; has `.claude/commands/` |
-| company-portal | React 19, TypeScript ~6, Vite 8, Tailwind 4, shadcn 4 (Base UI), Turborepo 2 + npm workspaces, Vitest 4 | `dev-dean`, no commits (`main` also unborn); GitHub repo exists but is empty | No `CLAUDE.md`. First commit + push: see Q9 |
+| company-portal | React 19, TypeScript ~6, Vite 8, Tailwind 4, shadcn 4 (Base UI), Turborepo 2 + npm workspaces, Vitest 4 | `main` @ `34a7303` pushed (GitHub default); `dev-dean` @ `4997b33` pushed, ahead of `main` | `CLAUDE.md`: no Co-Authored-By or AI attribution in commits |
 
 gasa-api remote branches: `main`, `staging` (same commit as `main`), `feat/orders-domain`, `feat/p5-admin-provisioning`, `feat/p6`, `feat/p8-permissions`, `feat/p9-shift-report-receipt`.
 
@@ -161,7 +163,7 @@ Read-only inspection on 2026-09-10, 2026-09-11 and 2026-09-16, then the Company 
 
 One commit, `69be9c4`, 40 files. Nothing changed on our surface. Philippine VAT and senior/PWD discounts in `config/merchant.php` + `Orders/Support/StatutoryTax.php`; `merchants.vat_registered`; `OrderBeneficiary`; tax fields on checkout/receipt/reports. New `.github/workflows/deploy.yml` deploys `main` to staging over SSH once CI passes (`migrate --force`, config/route/view cache), so a merge to `main` is a staging deploy (TICKET STATE RULE).
 
-### 4.3 Company domain + employee roster (built 2026-09-16, `dev-dean`, uncommitted)
+### 4.3 Company domain + employee roster (built 2026-09-16, `dev-dean`, pushed 2026-09-18)
 
 Built as the Merchant domain's twin so it merges without friction (user direction 2026-09-16: "follow what gasa-api has"). README section "Company & employees" documents it in the API's own voice.
 
@@ -200,11 +202,57 @@ Built as the Merchant domain's twin so it merges without friction (user directio
 
 **Follow-ups for later phases:** employee invites into the employee portal (needs a company-side invitation table or a generalised `team_invitations`), `POST /admin/companies` + status transitions, audit log entries for company-admin actions (the Audit Trail card), a company permission catalog, `PATCH /company/profile`.
 
+### 4.4 Departments, employee fields, CSV import/export (built 2026-09-18, `dev-dean`, pushed as `ddc4faf`)
+
+The part of section 5.1 that needs nobody's sign-off: it makes the employee record ready for allowance targeting and offboarding without touching money. Sits on top of the two earlier commits of 4.3.
+
+| Method | Route | Notes |
+|---|---|---|
+| `GET` `POST` | `/api/v1/company/departments` | Unpaginated `{ data }` with `employees_count`; `{ name }` -> 201 |
+| `PATCH` `DELETE` | `/api/v1/company/departments/{department}` | Rename (employees follow); delete only when empty |
+| `GET` | `/api/v1/company/employees/export` | The filtered roster as CSV (same query string as the list), streamed |
+| `POST` | `/api/v1/company/employees/import` | Multipart `file` + `mode` (`preview` default, or `commit`); always a 200 per-row report |
+| `GET` | `/api/v1/company/employees` | New filters `employment_type`, `department_id` |
+
+| Decision | Why |
+|---|---|
+| `departments` table replaces the free-text `employees.department`; the migration turns existing text into rows per company (case-insensitive) before dropping the column | Allowance will target departments; free text gives "Finance" / "finance" / "Fin." as three groups |
+| Names unique per company on `lower(name)`; `422 department_name_taken`; a department with employees can't be deleted (`422 department_in_use`) | Un-grouping people behind the caller's back would change who an allowance reaches |
+| `422 invalid_department` for a `department_id` that isn't the caller's, never distinguishing "another company's" from "doesn't exist"; checked in the Actions | An `exists:` rule is not tenant-scoped, and the difference would leak |
+| New fields: `middle_name`, `suffix`, `birthdate`, `employment_type` (NOT NULL, default `regular`, CHECK), `department_id`, `separated_at`; status gains `separated` | Section 5.1 |
+| `status` and `separated_at` move together, decided only in `UpdateEmployeeAction`: separated always has a date (sent, else stored, else today in `config('company.day_timezone')`), anything else never has one | One place for the allowance module to hook offboarding into |
+| `mobile` normalized to E.164 before validation (`Support/PhoneNumber`); numbers without a country code are read as PH mobiles; what can't be understood is rejected as typed | OTP and SMS later need a usable number |
+| One rules class (`Support/EmployeeFieldRules`) for the create request, the update request and the importer | A row the form would refuse can't get in through a file |
+| Import preview and commit run the SAME code in a transaction; preview rolls back. Rows are upserts (employee no., then email); a column in the file is authoritative, an absent one is untouched; `status` is never imported; bad rows are reported and skipped; each row writes in its own savepoint | A preview can't promise what a commit does differently |
+| Export's first columns are the import's, so a file round-trips as `unchanged`; cells starting with `=` or `@` get an apostrophe (a leading `+` is left alone: that is a mobile number) | Spreadsheet formula injection |
+| `photo_path` NOT added | It needs file storage and an upload endpoint, and nothing can show it until the Digital ID exists; ships with that feature |
+
+**Breaking change to our own unpushed contract:** `department` on an employee is now `{ id, name } | null` plus `department_id`; `mobile` comes back normalized. No consumer exists besides our portal, which was updated in the same session.
+
+**Verification (2026-09-18):** Pint clean; Larastan clean with no suppressions; Pest **541 passed**, with two unrelated pre-existing failures: the Redis health check and a timing-flaky Receipt query-count test; the allowance migration applied on the dev DB; smoke-tested live over HTTP: department create / duplicate / delete / in-use refusal, the new employee payload, import preview over real multipart (also typed `application/vnd.ms-excel`, what Windows browsers send) writing nothing, CSV export, seeded Maria Santos allowance read returning 150,000 cents.
+
+**Finding for the API team (pre-existing, not ours): the "no N+1" query-count tests are timing-flaky.** `AdminMerchantListTest` "the query count is flat" failed 1 run in 3 IN ISOLATION (6 vs 7), `ZReportTest`'s count case failed once in a full run. They reuse one Sanctum token per test, and Sanctum only issues its `last_used_at` UPDATE when the clock's second has changed since the token was last used, so a measured request has one query more or fewer depending on wall-clock timing. Fix on their side: freeze time in those tests (or use a fresh token per measurement). It will randomly redden CI on any PR, including ours. `HealthTest` fails here only because this machine has no Redis.
+
+### 4.5 Per-employee allowance grants (built 2026-09-18, `dev-dean`, pushed as `ddc4faf`)
+
+The first usable allowance slice is implemented without putting a mutable balance or points column on `employees`.
+
+| Method | Route | Notes |
+|---|---|---|
+| `GET` | `/api/v1/company/employees/{employee}/allowance` | Returns the employee's allowance purse, derived balance in cents, and the 20 latest ledger entries |
+| `POST` | `/api/v1/company/employees/{employee}/allowance/grants` | `{ amount_cents, reason, idempotency_key }` -> 201; only active employees may receive a grant |
+
+The database has company-scoped `allowance_accounts` and append-only `allowance_ledger_entries`. Grants lock the account while calculating the next balance, record the acting user, and reject reuse of an idempotency key with different details. Cross-company reads and writes resolve as 404 through the existing employee tenancy binding. DevSeeder grants Maria Santos 1,500 pesos and Ramon Villanueva 1,000 pesos. StagingCompanySeeder grants each staging employee 1,000 pesos.
+
+The company portal's employee detail page shows the current balance and recent activity, and active employees have a Grant dialog that accepts pesos and a reason. This does not yet deduct allowance at merchant checkout, create consumption/reversal/expiry entries, or implement allowance plans and schedules. Those need the shared Orders/payment design and are tracked as Q19.
+
 ---
 
 ## 5. Merchant integration recommendation
 
 Status: **proposed, not agreed.** Answers: "How do we onboard merchants that already have their own POS / inventory system?"
+
+Terminology note (2026-09-18): Gasa is not e-money (section 5.1). Read "wallet" below as the employee's allowance account, and "settlement report" as the merchant payout statement that Swiftly pays (section 5.1).
 
 ### Approach
 
@@ -264,6 +312,119 @@ flowchart TD
 
 - Syncing menus or inventory with external systems. It creates two sources of truth and a connector to maintain per POS vendor. Gasa only needs the amount, reference and merchant.
 
+### 5.1 Employee + allowance data model (proposed 2026-09-18, not agreed)
+
+Asked by the user: which fields and functions should an employee have, given Gasa is an allowance system (company -> employee allowance -> merchant purchase), the physical card is undecided for the MVP, and allowance settings are NOT part of the employee module.
+
+**Business model (clarified by the user 2026-09-18): Gasa is NOT e-money and must not drift into it.** Nobody holds a stored balance: an allowance is a spending entitlement the client company grants, employees consume it at accredited merchants, and money only moves afterwards, in arrears. **Settlement chain (user, 2026-09-18; my first reading, company -> merchant directly, was wrong): client company -> Swiftly (the platform operator, "our company") -> merchant.** Swiftly invoices each company for its employees' consumption and pays each merchant for the sales made there. Gasa authorizes purchases against the entitlement, records them, and produces both sets of statements. Rules that keep it that way: employer-funded only (no employee top-up), no transfers between employees, never redeemable for cash, usable only at accredited merchants, and unspent allowance expires. Avoid the words wallet, e-money, top-up and cash-in in code and UI. (Because Swiftly collects from companies and pays merchants, counsel should confirm the regulatory reading: whether that intermediary role needs any payment-system registration even though it is not e-money, and whether taking prepaid deposits from companies would change the answer. Engineering note, not legal advice.)
+
+**Principle:** the employee record holds identity and eligibility only. The allowance balance lives in an allowance account + append-only ledger, allowance rules in their own module, and QR/card as payment credentials. No `balance`, `allowance_amount` or `card_no` column on `employees`. This keeps every peso explainable (same spirit as "orders are never deleted"), lets allowance rules change over time, survives lost cards, and stops the card decision from blocking the MVP.
+
+```mermaid
+flowchart TD
+    C[Company] --> D[Department]
+    C --> E[Employee<br/>identity + eligibility]
+    D --> E
+    E --> U[User account<br/>after invite]
+    E --> W[Allowance account<br/>one per purse]
+    W --> L[(Ledger entries<br/>append-only)]
+    E --> P[Payment credential<br/>QR or card]
+    C --> A[Allowance plan]
+    A --> R[Allowance run]
+    R -->|credit| L
+    M[Merchant charge] -->|consumption after checks| L
+    L --> S[Company invoice<br/>Swiftly bills the company per period]
+    L --> X[Merchant payout statement<br/>Swiftly pays the merchant per period]
+```
+
+| Add to `employees` | Why |
+|---|---|
+| `employment_type` (regular, probationary, contractual, part_time, intern) | Allowance eligibility and amounts usually differ by type |
+| `department_id` -> new company-scoped `departments` table (replaces free-text `department`) | Allowance and reports target departments; free text breaks bulk targeting |
+| `separated_at` + status `separated` (so: active, inactive, separated) | Offboarding is an allowance event: it stops future grants and expires what is left. `inactive` is a pause, `separated` is terminal |
+| `mobile` normalized to E.164 | OTP for activation and PIN reset, transaction SMS |
+| `photo_path` | Digital ID photo: how a cashier verifies the person behind a QR or card |
+| `middle_name`, `suffix`, `birthdate` (nullable) | Name on the ID, identity check on account recovery, HRIS needs them anyway |
+
+Status 2026-09-18: every row of this table is built (section 4.4) except `photo_path`, which ships with the Digital ID.
+
+| Not an employee field | Where it goes |
+|---|---|
+| Remaining allowance | `allowance_accounts` + `allowance_ledger_entries` (append-only; `amount_cents`, `balance_after_cents`, reference, idempotency key, actor; types `grant`, `consumption`, `reversal`, `expiry`, `adjustment`, and never top-up, transfer or cash-out) |
+| Allowance amount and schedule | Allowances module: `allowance_plans` (amount, cadence, rollover or expire, target: all / department / employment type / individuals) + `allowance_runs` (idempotent per plan and period) |
+| Card number, QR | `payment_credentials` (type `qr_dynamic` / `qr_static` / `card`, token, status active / blocked / lost / replaced) |
+| Spending PIN | On the employee's user account, hashed |
+| Spending limits | On the plan or company settings, optional per-employee override |
+| Government IDs, salary, bank | Starter HRIS tables, encrypted; not needed for allowance |
+
+| Employee module function | Priority |
+|---|---|
+| Invite / activate account (sets `user_id`), resend, revoke | MVP: no app, balance or QR without it |
+| Employee detail page with a read-only money panel (balance, plan, recent credits and purchases) | MVP |
+| Bulk CSV import with validation preview, upsert by employee no. or email; export | MVP: nobody types 300 employees into a dialog |
+| Offboarding: separate with a date -> stop allowance, expire the remaining entitlement, block credentials | MVP |
+| Departments CRUD | MVP (allowance targets them) |
+| Audit entries for every employee change | MVP (Audit Trail card) |
+| Credential management: issue, replace, block, report lost | Next |
+| Company view of an employee's spending, limited to date, merchant and amount (no item detail; Data Privacy Act) | Next |
+| Per-employee allowance override and one-off credit with a reason | Next |
+| HRIS fields, org chart, cost centers, several purses | Later |
+
+Status 2026-09-18: built are the detail page (its money panel is a placeholder until the allowance module), CSV import + export, and departments CRUD (sections 4.4, 7.1). Offboarding exists as the `separated` status with its date; stopping allowance and blocking credentials waits for those modules. Invites and audit entries are not started.
+
+**Two calls to make early (cheap now, expensive on a live ledger):** (1) give the allowance account and ledger a `purse` dimension (`allowance` now; `salary_deduction` or separate benefit types later); (2) model QR and card as `payment_credentials` and go QR-first (dynamic QR in the app, static QR on the Digital ID for phone-less employees), so a physical card is just another credential type later.
+
+**Recommended answers to Q15 (2026-09-18, awaiting confirmation):**
+
+| # | Decision | Call | Why |
+|---|---|---|---|
+| a | Card in the MVP? | No. QR-first: dynamic QR in the employee app, static QR on the printed Digital ID + PIN for phone-less employees. Keep `payment_credentials` so a card is a later credential type | With no stored value a card is only an identifier, so it adds cost and logistics (printing, loss, replacement) without adding capability |
+| b | Rollover or expire? | Expire at the end of each allowance period. Rollover later as a per-plan option | The company only pays for what was consumed, so expiry costs employees a lapsed benefit but caps the company's exposure and keeps statements simple. It is also one of the traits that keeps this away from stored value |
+| c | Leftover at offboarding? | It lapses on the separation date, written as an `expiry` ledger entry | No money was ever handed over, so there is nothing to return |
+| d | What may the company see? | Per transaction: date, merchant, amount, reference. Never the items | The company pays Swiftly's invoice, so it must be able to check each line of it; what someone ate is not needed for that (Data Privacy Act: state this in the employee notice) |
+| e | One purse or several? | One (`allowance`) in the MVP, with the `purse` column present from day one | The likely second purse is `salary_deduction` (spend beyond the allowance, recovered through payroll), which the Starter HRIS card would consume |
+
+**Further calls this model raises:**
+
+- **Over the limit:** hard decline in the MVP. "Excess charged to salary" is a later, opt-in feature (second purse, capped, feeds payroll).
+- **Denomination:** pesos in integer cents, as everywhere in the API. If "points" is wanted as branding keep it strictly 1 point = 1 peso, because the merchant's bill is in pesos.
+- **Authorization checks on every charge:** company `active`, within its credit limit and with no invoice overdue past the grace period; employee `active`; merchant accredited by that company; remaining entitlement; per-transaction and daily caps. A suspended or over-limit company therefore stops all its employees' spending at once, which is Swiftly's protection, since Swiftly is the one paying the merchants.
+- **Reversals:** a voided order writes a `reversal` entry that restores the entitlement and drops off the statement; nothing is ever edited or deleted.
+
+**Settlement: client company -> Swiftly -> merchant (two statement layers, a core feature):**
+
+```mermaid
+flowchart TD
+    P[Purchases in the period<br/>consumption entries] --> CI[Company invoice<br/>Swiftly to the company: all merchants, plus fees]
+    P --> MP[Merchant payout statement<br/>Swiftly to the merchant: all companies, less commission]
+    CI --> V{Company reviews lines}
+    V -->|dispute a line| D[Swiftly mediates with the merchant<br/>reversal entry, credit on the next invoice]
+    V -->|accept| PAY[Company pays Swiftly<br/>uploads proof]
+    PAY --> CONF[Swiftly confirms receipt<br/>invoice marked paid]
+    MP --> OUT[Swiftly pays the merchant on schedule<br/>marked paid with reference]
+    CONF -.->|funds the float| OUT
+```
+
+- `company_invoices`: company, period, consumption total, fees, tax, amount due, status (open, issued, disputed, partially_paid, paid, overdue), issued / due / paid dates, payment proof, confirmed_by (a Swiftly admin; a company can never mark its own invoice paid).
+- `merchant_payouts`: merchant, period, gross sales, commission, net payable, status (open, issued, paid), paid date, payment reference.
+- Each consumption ledger entry carries `company_invoice_id` and `merchant_payout_id` once billed; a reversal after billing becomes a credit line on the next invoice and payout.
+- `companies`: `credit_limit_cents`, billing cycle, payment terms (due days), fee settings. `merchants`: payout cycle, `commission_bps`. Set by a Swiftly admin.
+- `company_merchants` stays: which merchants a company's employees may use (include / exclude).
+- Company portal (ours): a **Billing** area: invoices, line drill-down by merchant, department and employee, dispute a line, upload payment proof, statement of account, credit-limit meter. Merchant portal: payout statements from one counterparty (Swiftly) instead of many companies. Admin portal: issue invoices and payouts, confirm receipts, overdue view, suspend.
+
+**Calls for this chain (2026-09-18, awaiting confirmation, Q16):**
+
+| Decision | Call | Why |
+|---|---|---|
+| Prepaid or post-paid companies? | Post-paid: invoice in arrears, with a per-company credit limit | Prepaid deposits mean Swiftly holds client funds, which is the direction to avoid; a credit limit controls the same risk without holding money |
+| What stops a company that does not pay? | Automatic: purchases are declined when outstanding consumption reaches the credit limit, or an invoice is overdue past a grace period | Swiftly pays the merchants, so Swiftly carries each company's credit risk |
+| Merchant payouts tied to collection? | Fixed schedule (for example weekly), not pay-when-paid | It is the merchant's reason to join; keep the float small with semi-monthly company invoices and conservative limits. Swiftly finance must confirm it can fund the float |
+| Cycles | Company invoices semi-monthly (matches PH payroll), merchant payouts weekly | Short company cycles shrink the exposure |
+| Who marks things paid? | A Swiftly admin only, on both layers; the company uploads proof, the merchant can acknowledge receipt | Separation of duties |
+| Revenue model | Undecided: platform fee to the company, merchant commission, or both. The schema above supports both | Business decision for Swiftly |
+
+Decisions: Q15 and Q16 (recommendations above, awaiting confirmation).
+
 ---
 
 ## 6. company-portal API client
@@ -292,7 +453,7 @@ sequenceDiagram
 
 ---
 
-## 7. company-portal app (built 2026-09-16, `dev-dean`, uncommitted)
+## 7. company-portal app (built 2026-09-16, `dev-dean`, pushed 2026-09-18)
 
 Follows merchant-portal's structure and conventions (features folder, fetch client, zustand auth store, TanStack Query, URL-driven list filters, additive-tolerant parsers), adapted to React 19 + Base UI shadcn.
 
@@ -323,7 +484,23 @@ flowchart TD
 
 Tests (Vitest 4 + Testing Library, 26 passing): API client, auth store, employees API parsing, employees page (list, URL filters, empty, error, add and edit dialogs).
 
-Not done: employee detail page, CSV import, sorting controls, the three placeholder sections, a `CLAUDE.md`, a CI workflow for company-portal (merchant-portal's `.github` can be copied when the repo is first pushed).
+Not done: sorting controls and the three placeholder sections. `CLAUDE.md`, CI and automated deployment workflows are now present.
+
+### 7.1 Added 2026-09-18 (`dev-dean`, pushed as `289a5fb`)
+
+| Route | What exists |
+|---|---|
+| `/app/employees` | Filters for department and employment type (all filters live in the URL); names link to the detail page; header actions Departments, Import, Export (downloads exactly what the filters match), Add employee |
+| `/app/employees/:id` | Detail page: personal and employment cards, portal-account card, allowance balance/activity panel and grant dialog; one-click Set inactive / Reactivate / Reinstate, a dated "Mark as separated" dialog, Edit, Remove |
+| `/app/employees/departments` | List with head counts (linking to the filtered roster), add, rename, delete; a department with employees explains why it can't be deleted instead of offering it |
+| `/app/employees/import` | Choose a CSV -> automatic preview (summary, per-row result and errors, ignored columns) -> "Import N employees" -> result; template download |
+| Employee form | Middle name, suffix, birthdate, department and employment type selects, mobile hint; status and separation date on edit |
+
+Client: `lib/api/client.ts` now passes a `FormData` body through untouched (CSV upload) and has `api.download` (a bearer-token API can't be reached with a plain link). Tests: a URL-aware `mockApi` helper, shared fixtures and `renderPage` under `src/test/`; **53 tests** (was 26).
+
+### 7.2 Added 2026-09-18: employee allowance panel and grant dialog
+
+The employee detail page now fetches `GET /company/employees/{id}/allowance`, displays the derived PHP balance and recent ledger activity, and lets an active employee receive a grant through a dialog. Grant requests send amount in cents, a reason and a client-generated idempotency key. The portal shows 55 passing tests after this addition. Allowance spending at merchant checkout is not connected yet.
 
 ---
 
@@ -342,7 +519,16 @@ Not done: employee detail page, CSV import, sorting controls, the three placehol
 | 2026-09-16 | User asked for a `dev-dean` branch on all repos as our workspace. Synced, then created and checked out local `dev-dean` in company-portal and gasa-api (not pushed). Skipped merchant-portal under the SCOPE RULE (Q10). Added the BRANCH RULE to `ai-core/08` and reworked its sync script for a workspace branch. |
 | 2026-09-16 | User shared the task board and asked for the project state, at least dead links for dashboard/login/features, and to start Employee Management, following gasa-api's own patterns. Found `app/Domains/Company` empty. Read the Merchant domain end to end (tenancy, provisioning, team, tests, seeders), installed gasa-api's Composer deps, built the Company domain + employee roster (section 4.3) with Pest tests, Pint and Larastan clean. Pest not run: Postgres credentials needed (Q11). |
 | 2026-09-16 | Built the company-portal app (section 7): API client, auth, shell, login, inactive screen, dashboard, Employees CRUD, placeholders, 26 Vitest tests. Hit an npm 10.9 arborist crash on install; `npx -y npm@11 install` works (section 2.1). `build`, `lint`, `typecheck`, `test` all pass. Replaced the scaffold README. |
+| 2026-09-16 | Added the GASA icon (favicon, sidebar brand tile, login card). End of day: synced, committed company-portal on `main` (3 commits) and pushed `main` + `dev-dean`; added `CLAUDE.md` and `.gitattributes`. Committed gasa-api on `dev-dean` (2 commits); push denied with 403 for `dinmaku` (Q14). |
 | 2026-09-16 | User supplied the local Postgres password. Set it in gasa-api `.env`, switched cache/session/queue to file/sync (no Redis), created `gasa` + `gasa_api_test`, ran `migrate --seed`, started both servers (API :8001, portal :5174) and smoke-tested login, profile, employee search, wrong-portal login and CORS. Ran the Pest suite: 489 passed, 2 failed (Redis-only health check; flaky Z-report count case, verified not ours by stashing). |
+| 2026-09-18 | Synced (nothing moved). User asked what fields and functions an employee should have for an allowance system with the card still undecided. Recommendation recorded as section 5.1 (proposed): employee = identity + eligibility; wallet + ledger, allowance plans and payment credentials as separate entities; QR-first; purse dimension. Refreshed two stale lines in `ai-core/08`. No code changed. |
+| 2026-09-18 | User clarified the business model: Gasa is not e-money. (I read the money flow as company -> merchant directly; WRONG, corrected in the next row.) Reworded section 5.1 (allowance account instead of wallet; ledger entry types; rules that keep it non-e-money), added the recommended answers to Q15 and the merchant statement / settlement flow, corrected the section 1 briefing sentence. No code changed. |
+| 2026-09-18 | User corrected the settlement chain: client company -> Swiftly (platform operator) -> merchant, not company -> merchant directly. Rewrote the settlement part of section 5.1 as two statement layers (company invoices, merchant payouts), added the credit-limit authorization check and the calls in Q16, fixed section 1 and the section 5 note, corrected the memory. No code changed. |
+| 2026-09-18 | User said go ahead on the no-sign-off part of 5.1, and asked whether gasa-api was pushed (no: checked the remote, `dev-dean` is not there, Q14). Built departments, the new employee fields, the status/separation coupling, mobile normalization, and CSV import (preview/commit) + export in gasa-api (section 4.4); built the portal's departments page, employee detail page, import screen, export, and the richer form and filters (section 7.1). Found and explained the API's timing-flaky query-count tests. Nothing committed. |
+| 2026-09-18 | User asked to implement per-employee points/allowance. Built company-scoped allowance accounts and an append-only ledger, idempotent grants, read/grant API routes, local and staging fixtures, and the employee detail balance/activity panel with a grant dialog (sections 4.5 and 7.2). Focused API tests (7), portal tests (55), typecheck, lint, build, Pint and Larastan pass. Full Pest: 541 passed; two unrelated pre-existing failures remain, the local Redis health check and timing-flaky Receipt query-count test. Live smoke test: Company One's Maria Santos returns 150,000 cents. Committed and pushed as company-portal `289a5fb` and gasa-api `ddc4faf`. |
+| 2026-09-18 | User asked to push both affected repos. Pushed `dev-dean` to company-portal (`289a5fb`) and gasa-api (`ddc4faf`, new remote branch). User resolved and merged gasa-api PR #6; post-merge Pint found unused imports and an extra EOF blank line in `TenantLeakageTest.php`, fixed and pushed as `ecaf13d`. |
+| 2026-09-18 | User asked for automatic company-portal deployment after successful pushes. Added `.github/workflows/ci.yml` for Node 22 lint/typecheck/test/build and `.github/workflows/deploy.yml` to SSH to `/var/www/company-portal`, update `main`, rebuild the SPA and reload nginx after successful `main` CI. |
+| 2026-09-18 | Portal CI initially exposed pre-existing `packages/ui` lint failures under the root Turbo check. Added the standard Fast Refresh export exemptions and refactored `useIsMobile` to avoid synchronous effect state updates. Root lint, typecheck, 55 tests and build now pass locally. |
 
 ---
 
@@ -358,11 +544,17 @@ Not done: employee detail page, CSV import, sorting controls, the three placehol
 | 6 | Fix the truncated `ai-core/06-document-analysis.md` | User | Optional |
 | 7 | Confirm the API client approach (no axios, section 6) | User | Implemented 2026-09-16 following merchant-portal; say so if axios is still wanted |
 | 8 | Pin the company-portal dev port and add it to gasa-api `FRONTEND_ORIGINS` | Claude | Done 2026-09-16: 5174 strictPort; `.env` and `.env.example` updated in gasa-api |
-| 9 | First commit + push of company-portal. `main` and `dev-dean` are both unborn. Recommendation: put the first commit on `main` and push it so GitHub's default branch is `main`, then continue on `dev-dean`. Also decide on a `CLAUDE.md` with the same no-AI-attribution rule as the other two repos | User | Ready, waiting for go-ahead |
+| 9 | First commit + push of company-portal | User | Done 2026-09-16: three commits on `main`, pushed first so it is GitHub's default; `dev-dean` pushed from the same commit; `CLAUDE.md` added with the no-AI-attribution rule |
 | 10 | Was `dev-dean` meant for merchant-portal too? Skipped under the SCOPE RULE (`ai-core/08`) | User | Awaiting answer |
 | 11 | Postgres credentials so `composer test` can run locally | User | Done 2026-09-16: credentials in gasa-api `.env` (git-ignored), `gasa` and `gasa_api_test` created, suite run (section 4.3) |
-| 12 | gasa-api commit plan once tests pass, per its "one commit per logical feature" rule. Proposal: (a) `feat(company): Company domain, tenancy and employee roster (P11)` for domain + migrations + tests + README, (b) `chore(seed): company rosters in DevSeeder and StagingCompanySeeder`. Then a PR `dev-dean` -> `main`. Note the API's CLAUDE.md forbids AI attribution lines in commits | User | Awaiting answer |
+| 12 | gasa-api commit plan | User | Done: `966e1ac` feat(company) + `7ffbe60` chore(seed) plus `ddc4faf` employee and allowance work on `dev-dean`, no attribution lines. Branch pushed 2026-09-18; PR remains pending |
 | 13 | Employee invites (portal accounts) and `POST /admin/companies`: raise with the API team as the next Company phases (section 4.3 follow-ups) | User / API team | Not started |
+| 14 | `git push` to `swiftlyph/gasa-api` was denied for GitHub user `dinmaku` (HTTP 403). | User | **Resolved 2026-09-18: `dev-dean` pushed as `ddc4faf`; opening the PR remains pending** |
+| 15 | Employee + allowance model (section 5.1): (a) card in the MVP, or QR-first with the card as a later credential type? (b) rollover or expire unspent allowance? (c) leftover balance at offboarding: back to the company, or spendable until a date? (d) how much of an employee's spending may the company see? (e) one purse or several from day one? | User / team | Recommendations given 2026-09-18 (section 5.1): QR-first, expire at period end, lapse at separation, transaction-level visibility without items, one purse with the column in place. Awaiting confirmation |
+| 16 | Settlement chain client company -> Swiftly -> merchant (section 5.1): (a) post-paid with a credit limit, or prepaid? (b) merchant payouts on a fixed schedule, or pay-when-paid? (c) company billing and merchant payout cycles; (d) revenue model: company fee, merchant commission, or both; (e) counsel's view on Swiftly's intermediary role | User / Swiftly finance and counsel | Recommendations given 2026-09-18 (section 5.1): post-paid with a credit limit and automatic decline when over it or overdue, fixed weekly payouts, semi-monthly invoices, only a Swiftly admin marks anything paid. To be confirmed |
+| 17 | Commit and push the 2026-09-18 employee-management and allowance work on `dev-dean` | User | **Done 2026-09-18: company-portal `289a5fb`; gasa-api `ddc4faf`** |
+| 18 | Tell the API team their query-count ("no N+1") tests are timing-flaky and why (section 4.4); the fix is to freeze time in them | User | Not started |
+| 19 | Connect allowance consumption, reversals and expiry to merchant checkout and the future allowance plans module | User / API and merchant teams | Not started; current grant and read-only ledger slice is in section 4.5 |
 
 ---
 
@@ -404,8 +596,8 @@ gasa-api (needs `.env` with a working Postgres connection for the last line):
 cd /e/Desktop/gasa/gasa-api
 composer lint                                        # Pint: passed
 ./vendor/bin/phpstan analyse --memory-limit=1G       # [OK] No errors
-php artisan route:list --path=api/v1/company         # 7 routes
-composer test                                        # Pest: 490 passed on 2026-09-16 (only HealthTest fails here: it needs Redis)
+php artisan route:list --path=api/v1/company         # 15 routes
+composer test                                        # Pest: 541 passed on 2026-09-18 (HealthTest needs Redis; a query-count test may flake, section 4.4)
 ```
 
 company-portal:
@@ -414,12 +606,29 @@ company-portal:
 cd /e/Desktop/gasa/company-portal
 npx -y npm@11 install
 npm run typecheck && npm run lint && npm run test && npm run build
-# expect: 2 typechecks clean, eslint clean, 26 tests passed, web:build successful
+# expect: 2 typechecks clean, eslint clean, 55 tests passed, web:build successful
 ```
 
 ---
 
 ## 12. File impact
+
+### 2026-09-18
+
+| Path | Change |
+|---|---|
+| `gasa-api/app/Domains/Company/` | New: `Enums/EmploymentType`, `Models/Department`, `Support/{PhoneNumber, EmployeeFieldRules, EmployeeFilters, DepartmentOwnership}`, `Actions/{Create,Update,Delete}DepartmentAction`, `Actions/ImportEmployeesAction`, `Exceptions/{DepartmentNameTaken, DepartmentInUse, InvalidDepartment, InvalidImportFile}`, `Http/Controllers/{Department, EmployeeImport, EmployeeExport}Controller`, `Http/Requests/{SaveDepartment, ImportEmployees}Request`, `Http/Resources/DepartmentResource`, `Policies/DepartmentPolicy`. Changed: `Employee`, `Company`, `EmployeeStatus`, both employee Actions, the three employee requests, `EmployeeResource`, `EmployeeController` |
+| `gasa-api/` elsewhere | `config/company.php`; migrations `2026_09_18_000000_create_departments_table` and `000100_add_employment_columns_to_employees_table`; `DepartmentFactory`, `EmployeeFactory`; `routes/api/v1/company.php`; `DevSeeder`, `StagingCompanySeeder` (departments by name); `README.md`; tests `Company/{Department, EmployeeFields, EmployeeImport}Test` new, `Company/EmployeeTest` and `TenantLeakageTest` extended |
+| `company-portal/apps/web/src/` | New: `features/departments/*`, `features/employees/{import-template.ts, components/separate-employee-dialog.tsx, pages/employee-detail-page.tsx, pages/employee-import-page.tsx}`, `lib/download.ts`, `test/{mock-api.ts, render.tsx, location-probe.tsx, fixtures.ts}`, four page test files. Changed: `lib/api/client.ts`, `app/router.tsx`, the employees `types`, `api`, hooks, `format`, `errors`, form, table, status badge, remove dialog, list page, and the three rewritten test files |
+| `company-portal/docs/tasks/HANDOFF.md`, `ai-core/08-workspace-rules.md` | Sections 4.4, 5.1, 7.1, Q15 to Q18; two stale lines in the rules |
+
+| `gasa-api/app/Domains/Allowance/`, `gasa-api/database/migrations/2026_09_18_000200_create_allowance_accounts_and_ledger_entries_tables.php` | New allowance account, append-only ledger, grant action, validation, resources, controller, exceptions and schema |
+| `gasa-api/routes/api/v1/company.php`, `gasa-api/app/Domains/Company/Policies/EmployeePolicy.php` | Allowance read/grant routes and company-owned employee allowance authorization |
+| `gasa-api/database/seeders/DevSeeder.php`, `gasa-api/database/seeders/StagingCompanySeeder.php`, `gasa-api/tests/Feature/Company/AllowanceTest.php` | Known local/staging allowance fixtures and seven API tests |
+| `company-portal/apps/web/src/features/employees/` | Allowance types, API functions, query/mutation hooks, grant dialog, balance/activity panel, formatter and tests |
+| `company-portal/.github/workflows/{ci,deploy}.yml` | Portal CI and post-success SSH deployment to the staging server |
+
+2026-09-18 work is committed and pushed: company-portal `289a5fb`, gasa-api `ddc4faf`. merchant-portal unchanged (read only).
 
 ### 2026-09-16 (Employee Management)
 
@@ -429,10 +638,11 @@ npm run typecheck && npm run lint && npm run test && npm run build
 | `company-portal/apps/web/` (section 7) | App code, tests, `vite.config.ts`, `vitest.setup.ts`, `.env.example`, `.env.local` (git-ignored), `index.html`, `package.json` (deps + `test` script), `tsconfig.app.json` (includes the setup file). Scaffold `App.tsx` removed |
 | `company-portal/packages/ui/` | shadcn components added (input, label, card, table, dialog, alert-dialog, select, badge, dropdown-menu, sidebar, sheet, tooltip, separator, skeleton, avatar, breadcrumb, field, alert, pagination); `hooks/use-mobile.ts` moved in from the app; generated `sonner.tsx` removed (the app has its own Toaster) |
 | `company-portal/` root | `README.md` rewritten; `turbo.json` + `package.json` gained `test`; `.gitignore` allows `.env.example`; `package-lock.json` regenerated by npm 11 |
+| `company-portal/CLAUDE.md`, `.gitattributes` | Added: the no-AI-attribution commit rule; `* text=auto eol=lf` like gasa-api, so Windows checkouts stop warning about CRLF on every commit |
 | `company-portal/asset/gasa-icon.png` (user-supplied source) -> `apps/web/public/gasa-icon.png` | Cropped to the circle, 512x512, transparent corners. Used as the favicon (`index.html`), the sidebar brand tile (`app-sidebar.tsx`) and on the login card + brand panel (`login-page.tsx`, replacing the screenshot placeholder) |
 | `company-portal/docs/tasks/HANDOFF.md` | Rewritten for this session |
 
-Nothing committed in either repo. merchant-portal unchanged (read only).
+company-portal: committed and pushed (`main` @ `34a7303`; `dev-dean` @ `5db5e97`). gasa-api: PR #6 merged at `main` @ `7f53b6b`; follow-up lint fix `dev-dean` @ `ecaf13d` is pushed and awaits a new PR. merchant-portal unchanged (read only).
 
 ### 2026-09-16 (earlier)
 

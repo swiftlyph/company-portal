@@ -17,16 +17,20 @@ import { useRemoveEmployee } from "../use-employee-mutations"
 /**
  * Confirms a removal. The backend soft-deletes, so the record is
  * recoverable by the API team, but from the portal's side it is gone: the
- * copy says so plainly rather than promising an undo that doesn't exist.
+ * copy says so plainly rather than promising an undo that doesn't exist,
+ * and points at the two statuses that are usually what was meant.
  */
 export function RemoveEmployeeDialog({
   open,
   onOpenChange,
   employee,
+  onRemoved,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
   employee: Employee
+  /** Called after a successful removal, e.g. to leave the detail page. */
+  onRemoved?: () => void
 }) {
   const { mutateAsync, isPending } = useRemoveEmployee()
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
@@ -37,6 +41,7 @@ export function RemoveEmployeeDialog({
       await mutateAsync(employee.id)
       toast.success(`${employee.full_name} was removed.`)
       onOpenChange(false)
+      onRemoved?.()
     } catch (error) {
       setErrorMessage(describeEmployeeError(error, "Couldn't remove the employee."))
     }
@@ -48,8 +53,8 @@ export function RemoveEmployeeDialog({
         <AlertDialogHeader>
           <AlertDialogTitle>Remove {employee.full_name}?</AlertDialogTitle>
           <AlertDialogDescription>
-            They will disappear from the roster and stop being eligible for allowance. If they
-            only need a pause, set their status to inactive instead.
+            They will disappear from the roster entirely. If they left the company, mark them as
+            separated instead; if they only need a pause, set them to inactive. Both keep the record.
           </AlertDialogDescription>
         </AlertDialogHeader>
 

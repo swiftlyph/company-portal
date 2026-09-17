@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from "react"
-import { useSearchParams } from "react-router-dom"
-import { PlusIcon, SearchIcon } from "lucide-react"
+import { Link, useSearchParams } from "react-router-dom"
+import { toast } from "sonner"
+import { DownloadIcon, FolderTreeIcon, PlusIcon, SearchIcon, UploadIcon } from "lucide-react"
 import { Button } from "@workspace/ui/components/button"
 import { Input } from "@workspace/ui/components/input"
 import {
@@ -18,39 +19,62 @@ import {
   SelectValue,
 } from "@workspace/ui/components/select"
 import { Skeleton } from "@workspace/ui/components/skeleton"
+import { useDepartments } from "@/features/departments/use-departments"
+import { saveBlob, todayIso } from "@/lib/download"
+import { exportEmployees } from "../api"
 import { EmployeeFormDialog } from "../components/employee-form-dialog"
 import { EmployeesTable } from "../components/employees-table"
 import { RemoveEmployeeDialog } from "../components/remove-employee-dialog"
-import type { Employee, EmployeeStatus } from "../types"
+import { describeEmployeeError } from "../errors"
+import { EMPLOYEE_STATUS_LABEL, EMPLOYMENT_TYPE_LABEL } from "../format"
+import type { Employee, EmployeeStatus, EmploymentType } from "../types"
+import { EMPLOYEE_STATUS_VALUES, EMPLOYMENT_TYPE_VALUES } from "../types"
 import { useEmployees } from "../use-employees"
 
+const ALL = "all"
+
 const STATUS_FILTER_ITEMS = [
-  { value: "all", label: "All statuses" },
-  { value: "active", label: "Active" },
-  { value: "inactive", label: "Inactive" },
+  { value: ALL, label: "All statuses" },
+  ...EMPLOYEE_STATUS_VALUES.map((value) => ({ value, label: EMPLOYEE_STATUS_LABEL[value] })),
+]
+
+const TYPE_FILTER_ITEMS = [
+  { value: ALL, label: "All types" },
+  ...EMPLOYMENT_TYPE_VALUES.map((value) => ({ value, label: EMPLOYMENT_TYPE_LABEL[value] })),
 ]
 
 function isEmployeeStatus(value: string): value is EmployeeStatus {
-  return value === "active" || value === "inactive"
+  return (EMPLOYEE_STATUS_VALUES as string[]).includes(value)
+}
+
+function isEmploymentType(value: string): value is EmploymentType {
+  return (EMPLOYMENT_TYPE_VALUES as string[]).includes(value)
 }
 
 /**
- * `/app/employees`. Status, search and page live in the URL
- * (?status=&search=&page=) and drive the server query, so a refresh or a
- * shared link restores exactly that view; nothing server-side lives in
- * useState. The search box only commits on submit (Enter or the button)
- * so typing doesn't fire a request per keystroke.
+ * `/app/employees`. Every filter and the page live in the URL
+ * (?status=&employment_type=&department_id=&search=&page=) and drive the
+ * server query, so a refresh or a shared link restores exactly that view;
+ * nothing server-side lives in useState. The search box only commits on
+ * submit (Enter or the button) so typing doesn't fire a request per
+ * keystroke. Export downloads exactly what these filters match.
  */
 export function EmployeesPage() {
   const [searchParams, setSearchParams] = useSearchParams()
+  const departments = useDepartments()
 
-  const statusParam = searchParams.get("status") ?? "all"
+  const statusParam = searchParams.get("status") ?? ALL
+  const typeParam = searchParams.get("employment_type") ?? ALL
+  const departmentParam = searchParams.get("department_id") ?? ALL
   const searchParam = searchParams.get("search") ?? ""
   const pageParam = Number(searchParams.get("page") ?? "1")
   const page = Number.isFinite(pageParam) && pageParam > 0 ? pageParam : 1
+  const departmentId = Number(departmentParam)
 
   const filters = {
     status: isEmployeeStatus(statusParam) ? statusParam : undefined,
+    employment_type: isEmploymentType(typeParam) ? typeParam : undefined,
+    department_id: Number.isInteger(departmentId) && departmentId > 0 ? departmentId : undefined,
     search: searchParam || undefined,
     page,
   }
@@ -62,6 +86,12 @@ export function EmployeesPage() {
   const [formOpen, setFormOpen] = useState(false)
   const [editTarget, setEditTarget] = useState<Employee | null>(null)
   const [removeTarget, setRemoveTarget] = useState<Employee | null>(null)
+  const [exporting, setExporting] = useState(false)
+
+  const departmentItems = [
+    { value: ALL, label: "All departments" },
+    ...(departments.data?.data ?? []).map((d) => ({ value: String(d.id), label: d.name })),
+  ]
 
   function updateParams(next: Record<string, string | null>) {
     const params = new URLSearchParams(searchParams)
@@ -75,8 +105,9 @@ export function EmployeesPage() {
     setSearchParams(params)
   }
 
-  function handleStatusChange(value: string) {
-    updateParams({ status: value === "all" ? null : value, page: null })
+  /** Changing any filter goes back to page 1: page 4 of the old result means nothing in the new one. */
+  function setFilter(key: string, value: string) {
+    updateParams({ [key]: value === ALL ? null : value, page: null })
   }
 
   function handleSearchSubmit(event: FormEvent<HTMLFormElement>) {
@@ -86,7 +117,7 @@ export function EmployeesPage() {
 
   function clearFilters() {
     setSearchDraft("")
-    updateParams({ status: null, search: null, page: null })
+    updateParams({ status: null, employment_type: null, department_id: null, search: null, page: null })
   }
 
   function goToPage(nextPage: number) {
@@ -103,7 +134,19 @@ export function EmployeesPage() {
     setFormOpen(true)
   }
 
-  const hasFilters = statusParam !== "all" || searchParam !== ""
+  async function handleExport() {
+    setExporting(true)
+    try {
+      saveBlob(await exportEmployees(filters), `employees-${todayIso()}.csv`)
+    } catch (exportError) {
+      toast.error(describeEmployeeError(exportError, "Couldn't export the roster."))
+    } finally {
+      setExporting(false)
+    }
+  }
+
+  const hasFilters =
+    statusParam !== ALL || typeParam !== ALL || departmentParam !== ALL || searchParam !== ""
 
   return (
     <div className="flex flex-col gap-4">
@@ -111,13 +154,27 @@ export function EmployeesPage() {
         <div className="flex flex-col gap-1">
           <h1 className="text-2xl font-bold">Employees</h1>
           <p className="text-sm text-muted-foreground">
-            Everyone on your roster. Only active employees can receive allowance.
+            Everyone on your roster. Only active employees will be able to receive allowance.
           </p>
         </div>
-        <Button onClick={openAdd}>
-          <PlusIcon data-icon="inline-start" />
-          Add employee
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button variant="outline" render={<Link to="/app/employees/departments" />}>
+            <FolderTreeIcon data-icon="inline-start" />
+            Departments
+          </Button>
+          <Button variant="outline" render={<Link to="/app/employees/import" />}>
+            <UploadIcon data-icon="inline-start" />
+            Import
+          </Button>
+          <Button variant="outline" onClick={() => void handleExport()} disabled={exporting}>
+            <DownloadIcon data-icon="inline-start" />
+            {exporting ? "Exporting…" : "Export"}
+          </Button>
+          <Button onClick={openAdd}>
+            <PlusIcon data-icon="inline-start" />
+            Add employee
+          </Button>
+        </div>
       </div>
 
       <div className="flex flex-wrap items-end gap-3">
@@ -140,27 +197,27 @@ export function EmployeesPage() {
           </Button>
         </form>
 
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor="employees-status-filter" className="text-xs text-muted-foreground">
-            Status
-          </label>
-          <Select
-            value={statusParam}
-            onValueChange={(value) => handleStatusChange(String(value ?? "all"))}
-            items={STATUS_FILTER_ITEMS}
-          >
-            <SelectTrigger id="employees-status-filter" className="w-40">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {STATUS_FILTER_ITEMS.map((item) => (
-                <SelectItem key={item.value} value={item.value}>
-                  {item.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        <FilterSelect
+          id="employees-status-filter"
+          label="Status"
+          value={statusParam}
+          items={STATUS_FILTER_ITEMS}
+          onChange={(value) => setFilter("status", value)}
+        />
+        <FilterSelect
+          id="employees-department-filter"
+          label="Department"
+          value={departmentParam}
+          items={departmentItems}
+          onChange={(value) => setFilter("department_id", value)}
+        />
+        <FilterSelect
+          id="employees-type-filter"
+          label="Type"
+          value={typeParam}
+          items={TYPE_FILTER_ITEMS}
+          onChange={(value) => setFilter("employment_type", value)}
+        />
 
         {hasFilters && (
           <Button variant="ghost" size="sm" onClick={clearFilters}>
@@ -188,7 +245,9 @@ export function EmployeesPage() {
             {hasFilters ? "No employees match these filters" : "No employees yet"}
           </p>
           <p className="text-sm text-muted-foreground">
-            {hasFilters ? "Try a different search or status." : "Add your first employee to get started."}
+            {hasFilters
+              ? "Try a different search or filter."
+              : "Add your first employee, or import your whole roster from a CSV file."}
           </p>
         </div>
       )}
@@ -253,6 +312,40 @@ export function EmployeesPage() {
           employee={removeTarget}
         />
       )}
+    </div>
+  )
+}
+
+function FilterSelect({
+  id,
+  label,
+  value,
+  items,
+  onChange,
+}: {
+  id: string
+  label: string
+  value: string
+  items: { value: string; label: string }[]
+  onChange: (value: string) => void
+}) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <label htmlFor={id} className="text-xs text-muted-foreground">
+        {label}
+      </label>
+      <Select value={value} onValueChange={(next) => onChange(String(next ?? ALL))} items={items}>
+        <SelectTrigger id={id} className="w-44">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {items.map((item) => (
+            <SelectItem key={item.value} value={item.value}>
+              {item.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
     </div>
   )
 }

@@ -5,8 +5,13 @@ import { LoginPage } from "@/features/auth/pages/login-page"
 import { InactivePage } from "@/features/auth/pages/inactive-page"
 import { RequireActiveCompany } from "@/features/auth/require-active-company"
 import { DashboardPage } from "@/features/dashboard/pages/dashboard-page"
+import { DepartmentsPage } from "@/features/departments/pages/departments-page"
+import { EmployeeDetailPage } from "@/features/employees/pages/employee-detail-page"
+import { EmployeeImportPage } from "@/features/employees/pages/employee-import-page"
 import { EmployeesPage } from "@/features/employees/pages/employees-page"
 import { NotFound } from "@/pages/not-found"
+
+const EMPLOYEES_PARENT = { parentTitle: "Employees", parentPath: "/app/employees" }
 
 export const router = createBrowserRouter([
   { path: "/", element: <Navigate to="/login" replace /> },
@@ -22,7 +27,27 @@ export const router = createBrowserRouter([
     children: [
       { index: true, element: <Navigate to="/app/dashboard" replace /> },
       { path: "dashboard", element: <DashboardPage />, handle: { title: "Dashboard" } },
+
+      // Employee Management. Departments and the import live under it
+      // (the sidebar keeps "Employees" lit for all of them). The two
+      // static paths outrank the :id route, so "departments" and "import"
+      // are never read as an employee id.
       { path: "employees", element: <EmployeesPage />, handle: { title: "Employees" } },
+      {
+        path: "employees/departments",
+        element: <DepartmentsPage />,
+        handle: { title: "Departments", ...EMPLOYEES_PARENT },
+      },
+      {
+        path: "employees/import",
+        element: <EmployeeImportPage />,
+        handle: { title: "Import", ...EMPLOYEES_PARENT },
+      },
+      {
+        path: "employees/:id",
+        element: <EmployeeDetailPage />,
+        handle: { title: "Employee", ...EMPLOYEES_PARENT },
+      },
 
       // The other board cards (Merchants, Starter HRIS, Audit Trail) are
       // not built yet. They get real routes with placeholder content so

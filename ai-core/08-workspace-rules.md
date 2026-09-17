@@ -39,8 +39,9 @@ Our working branch in both repos is `dev-dean`.
 - All commits go on `dev-dean`. Never commit on `main`.
 - `main` only moves by fast-forwarding to `origin/main` (SYNC RULE) or by a PR merged on GitHub.
 - gasa-api ships through a PR `dev-dean` -> `main`. CI + `deploy.yml` then deploy `main` to staging.
-- company-portal has no commits yet, so `main` and `dev-dean` are both unborn. How the first commit lands is HANDOFF Q9 (not decided).
-- Ask before the first push of `dev-dean`, and before merging `main` into `dev-dean`.
+- company-portal: `main` is GitHub's default branch (first push 16 Sep 2026). New commits go on `dev-dean` and reach `main` by PR.
+- gasa-api: `dev-dean` is not on the remote yet; the push is blocked on repo access (HANDOFF Q14).
+- Ask before merging `main` into `dev-dean`.
 
 ---
 
@@ -63,6 +64,6 @@ done
 ```
 
 - Fast-forward only. Never force, reset, rebase or stash to make a sync succeed.
-- Expected failures: `pull --ff-only` has no upstream until `dev-dean` is pushed; company-portal reports no `main` ref until its first push. Any other failure (diverged, conflicting local changes): stop and tell the user.
+- Expected failure: `pull --ff-only` has no upstream in gasa-api until `dev-dean` is pushed (HANDOFF Q14). Any other failure (diverged, conflicting local changes): stop and tell the user.
 - When `main` is ahead of `dev-dean`, report it and ask before merging `main` into `dev-dean`.
 - Record the time, each repo's branch and HEAD in the HANDOFF "Last sync" row. Before new work, check that row: if it is 8+ hours old, sync again.

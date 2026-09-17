@@ -15,6 +15,9 @@ export function describeEmployeeError(error: unknown, fallback: string): string 
     if (error.code === "employee_number_taken") {
       return "An employee with this employee number already exists.";
     }
+    if (error.code === "invalid_department") {
+      return "That department no longer exists. Pick another one.";
+    }
     if (error.code === "company_inactive") {
       return "Your company account is not active.";
     }
@@ -24,9 +27,9 @@ export function describeEmployeeError(error: unknown, fallback: string): string 
 }
 
 /**
- * Per-field messages from a 422. Both validation_failed and the two
- * *_taken codes name the field in `errors`, so a form can attach the
- * message to the right input and skip the banner.
+ * Per-field messages from a 422. validation_failed, the two *_taken codes
+ * and invalid_department all name the field in `errors`, so a form can
+ * attach the message to the right input and skip the banner.
  */
 export function fieldErrorsFrom(error: unknown): ApiFieldErrors | null {
   if (error instanceof ApiError && error.status === 422 && error.errors) {
